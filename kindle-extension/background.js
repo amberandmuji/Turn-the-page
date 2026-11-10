@@ -148,6 +148,10 @@ async function handle(msg, sender) {
       const state = await getState();
       if (state.mode !== 'on') return null;
       if (msg.action === 'pause') return stop('fist');
+      if (msg.action === 'up' || msg.action === 'down') {
+        tellTab(state.tabId, { type: 'fold', folded: msg.action === 'down' });
+        return null;
+      }
       tellTab(state.tabId, { type: 'turn', dir: msg.action });
       return null;
     }

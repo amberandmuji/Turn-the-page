@@ -300,7 +300,7 @@
     dock.classList.toggle('min', on);
     fold.setAttribute('aria-expanded', String(!on));
     fold.setAttribute('aria-label', on ? 'Show camera card' : 'Minimize');
-    fold.title = on ? 'Show camera card' : 'Minimize';
+    fold.title = on ? 'Show camera card (or swipe up)' : 'Minimize (or swipe down)';
     if (on) drawHand(null);
     if (remember) chrome.storage.local.set({ cardMinimised: on }).catch(() => {});
   }
@@ -395,6 +395,7 @@
       return true;
     }
     if (msg.type === 'state') showState(msg.state);
+    if (msg.type === 'fold' && mode === 'on') setMinimised(msg.folded);
     if (msg.type === 'settings') {
       settings = msg.settings;
       view.hidden = !settings.preview || mode === 'off';

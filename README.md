@@ -9,7 +9,8 @@ Built by Amber.
 1. Open a PDF from your computer, or drop one onto the page.
 2. Click **Start gestures** and allow camera access.
 3. **Swipe right to left** for the next page, **left to right** for the previous page.
-4. **Hold a fist** for about a second to pause. The camera turns off completely. Click **Start gestures** or press **G** to resume.
+4. **Swipe down** to fold the camera window into a small pill, **swipe up** to open it again (hold your hand still for a moment first). The fold button on the window does the same.
+5. **Hold a fist** for about a second to pause. The camera turns off completely. Click **Start gestures** or press **G** to resume.
 
 Arrow keys, Page Up/Down and the space bar also turn pages.
 

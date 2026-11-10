@@ -138,3 +138,36 @@ test('palm centre is mirrored to match the preview', () => {
   assert.ok(Math.abs(c.y - 0.4) < 1e-9);
   assert.equal(palmCentre(null), null);
 });
+
+// Vertical moves: { to } is x, so keep x and move y with toY.
+const vmove = (toY, ms, x = 0.5) => ({ to: x, toY, ms });
+
+test('holding still, then swiping down, folds once', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, vmove(0.7, 300), { hold: 200 }], { x: 0.5, y: 0.3 }), ['down']);
+});
+
+test('holding still, then swiping up, opens once', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, vmove(0.3, 300), { hold: 200 }], { x: 0.5, y: 0.7 }), ['up']);
+});
+
+test('raising a hand into view is not a swipe up', () => {
+  assert.deepEqual(play(new GestureDetector(), [vmove(0.3, 350), { hold: 300 }], { x: 0.5, y: 0.95 }), []);
+});
+
+test('lowering a hand out of view is not a swipe down', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, vmove(0.98, 300), { gone: 600 }], { x: 0.5, y: 0.4 }), []);
+});
+
+test('bringing the hand back up after a swipe down does not open again', () => {
+  assert.deepEqual(play(new GestureDetector(), [
+    { hold: 400 }, vmove(0.7, 300), { hold: 100 }, vmove(0.3, 350), { hold: 200 },
+  ], { x: 0.5, y: 0.3 }), ['down']);
+});
+
+test('a sideways swipe never counts as up or down', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, { to: 0.2, toY: 0.6, ms: 300 }, { hold: 200 }], { x: 0.75, y: 0.45 }), ['next']);
+});
+
+test('a slow drift down does not fold', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, vmove(0.7, 2000), { hold: 200 }], { x: 0.5, y: 0.3 }), []);
+});

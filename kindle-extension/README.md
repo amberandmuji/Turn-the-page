@@ -18,7 +18,7 @@ Click the extension's icon. When a new version is out, the bottom of the menu sa
 1. Open a book at https://read.amazon.com.
 2. Click the extension's icon and **Start gestures**, or press **Alt+G** on the Kindle tab.
 3. The first time, a tab opens asking for the camera. Click **Allow**. It closes itself and gestures start.
-4. Swipe right to left for the next page, left to right for the previous one. A card in the bottom-right corner shows your hand. Click its arrow to fold it into a small pill so it doesn't cover the book; it stays folded until you open it again.
+4. Swipe right to left for the next page, left to right for the previous one. A card in the bottom-right corner shows your hand. Click its arrow, or hold your hand still and swipe down, to fold it into a small pill so it doesn't cover the book. Swipe up (or click) to open it again. It stays folded until you open it.
 5. Hold a fist for about a second to pause. The camera turns off. Press **Alt+G** or click **Start gestures** to resume.
 
 Gestures also stop when you switch away from the Kindle tab or close it, so the camera is never on in the background.

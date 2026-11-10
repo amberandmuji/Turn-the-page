@@ -536,19 +536,42 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .statusbar .privacy { display: inline-flex; align-items: center; gap: 6px; }
 .statusbar .privacy .icon { width: 14px; height: 14px; }
 
-/* ---------- Camera preview ---------- */
+/* ---------- Camera preview ----------
+   One card that folds into a small pill: a clip-path morph from the whole
+   card to its bottom-right corner, where the pill's dot and button sit. */
 .preview {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --bar: 40px;
+  --pill: 76px;
   position: fixed;
   right: 16px;
   bottom: 48px;
-  width: 220px;
-  aspect-ratio: 4 / 3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
-  box-shadow: 0 0 0 2px var(--accent), var(--raised-shadow);
+  z-index: 5;
+  color: #e8eaed;
+  font-size: 12.5px;
+  /* drop-shadow follows the clipped shape, box-shadow wouldn't */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22)) drop-shadow(0 10px 22px rgba(0, 0, 0, 0.26));
 }
 .preview[hidden] { display: none; }
+.preview-card {
+  width: 220px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #16181b;
+  clip-path: inset(0 0 0 0 round 12px);
+  transition: clip-path 420ms var(--ease-out);
+}
+.preview.folded .preview-card {
+  clip-path: inset(calc(100% - var(--bar)) 0 0 calc(100% - var(--pill)) round 20px);
+  transition-duration: 320ms;
+}
+.preview-view {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  transition: opacity 200ms ease, filter 300ms ease;
+}
+.preview.folded .preview-view { opacity: 0; filter: blur(6px); }
 .preview video, .preview canvas {
   position: absolute;
   inset: 0;
@@ -557,6 +580,84 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   object-fit: cover;
   transform: scaleX(-1); /* mirror, so it moves like a mirror */
 }
+.preview-bar {
+  height: var(--bar);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.preview-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 200ms ease;
+}
+.preview.folded .preview-text { opacity: 0; transition-duration: 120ms; }
+
+/* Live dot, with the fist-to-pause progress drawn as a ring round it */
+.live-dot {
+  --progress: 0;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.live-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f87171;
+  transition: background-color 200ms ease, transform 200ms var(--ease-out);
+}
+.live-dot.hand::before { transform: scale(1.25); background: #fca5a5; }
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#f87171 calc(var(--progress) * 360deg), rgba(255, 255, 255, 0.14) 0);
+  -webkit-mask: radial-gradient(circle, transparent 6.5px, #000 7.5px);
+  mask: radial-gradient(circle, transparent 6.5px, #000 7.5px);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.live-dot.fist::after { opacity: 1; }
+.live-dot.turn::before { animation: dot-tick 320ms var(--ease-out); }
+@keyframes dot-tick { 0% { transform: scale(1.9); background: #7dd3fc; } }
+
+.fold-btn {
+  all: unset;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #c4c9cf;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.fold-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: #fff; }
+.fold-btn:active:not(:disabled) { background: rgba(255, 255, 255, 0.16); transform: none; }
+.fold-btn:focus-visible { outline: 2px solid #38bdf8; outline-offset: -2px; }
+.fold-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 320ms var(--ease-out);
+}
+.preview.folded .fold-btn svg { transform: rotate(180deg); }
 
 /* Which way the last gesture was read */
 .gesture-hint {
@@ -576,21 +677,6 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 }
 .gesture-hint:empty { display: none; }
 .gesture-hint.show { opacity: 1; transform: translate(-50%, 0); }
-
-/* Ring that fills while a fist is held */
-.fist-ring {
-  --progress: 0;
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: conic-gradient(#f59e0b calc(var(--progress) * 360deg), rgba(255, 255, 255, 0.25) 0);
-  -webkit-mask: radial-gradient(circle, transparent 7px, #000 8px);
-  mask: radial-gradient(circle, transparent 7px, #000 8px);
-  opacity: calc(var(--progress) * 4);
-}
 
 /* ---------- How-to dialog ---------- */
 .help {
@@ -687,7 +773,8 @@ kbd {
   .settings { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
   .settings::backdrop { background: rgba(15, 17, 20, 0.35); }
   .statusbar .privacy { display: none; }
-  .preview { width: 140px; }
+  .preview-card { width: 168px; }
+  .preview-text { font-size: 11.5px; }
   .help-card { padding: 20px; }
 }
 

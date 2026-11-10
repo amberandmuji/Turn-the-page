@@ -21,7 +21,9 @@ const els = {
   preview: $('preview'),
   video: $('video'),
   overlay: $('overlay'),
-  fistRing: $('fist-ring'),
+  liveDot: $('live-dot'),
+  previewText: $('preview-text'),
+  foldBtn: $('fold-btn'),
   settingsBtn: $('settings-btn'),
   settings: $('settings'),
   sensitivity: $('sensitivity'),
@@ -88,6 +90,7 @@ function applySettings() {
   els.noSwap.checked = !settings.swap;
   detector.setSwapDirection(settings.swap);
   els.preview.hidden = !(settings.preview && gestureState === 'on');
+  els.previewText.textContent = settings.swap ? 'Swipe → for next page' : 'Swipe ← for next page';
   detector.setSensitivity(settings.sensitivity);
 }
 
@@ -279,7 +282,8 @@ async function startGestures() {
 
 function stopGestures(reason) {
   camera.stop();
-  els.fistRing.style.setProperty('--progress', 0);
+  els.liveDot.style.setProperty('--progress', 0);
+  els.liveDot.classList.remove('fist', 'hand');
   setGestureState('off');
   setStatus(reason === 'fist'
     ? 'Paused, and the camera is off. Click Start gestures or press G to resume.'
@@ -294,12 +298,38 @@ els.gestureBtn.addEventListener('click', toggleGestures);
 
 function onFrame({ t, landmarks, gesture, score }) {
   const action = detector.update({ t, hand: palmCentre(landmarks), gesture, score });
-  els.fistRing.style.setProperty('--progress', detector.fistProgress(t));
+  const fist = detector.fistProgress(t);
+  els.liveDot.style.setProperty('--progress', fist);
+  els.liveDot.classList.toggle('fist', fist > 0);
+  els.liveDot.classList.toggle('hand', !!landmarks);
   if (action === 'pause') stopGestures('fist');
+  else if (action === 'down') setFolded(true);
+  else if (action === 'up') setFolded(false);
   else if (action) {
     showGestureHint(action);
+    tickDot();
     turn(action);
   }
+}
+
+// ---------- Camera window ----------
+// Folds into a small pill so it doesn't cover the page. The button doesn't
+// take keyboard focus, so the arrow keys keep turning pages.
+function setFolded(on, remember = true) {
+  els.preview.classList.toggle('folded', on);
+  els.foldBtn.setAttribute('aria-expanded', String(!on));
+  els.foldBtn.setAttribute('aria-label', on ? 'Show camera' : 'Minimize');
+  els.foldBtn.title = on ? 'Show camera (or swipe up)' : 'Minimize (or swipe down)';
+  if (remember) save('preview-folded', on);
+}
+els.foldBtn.addEventListener('pointerdown', (e) => e.preventDefault());
+els.foldBtn.addEventListener('click', () => setFolded(!els.preview.classList.contains('folded')));
+setFolded(load('preview-folded', false), false);
+
+function tickDot() {
+  els.liveDot.classList.remove('turn');
+  void els.liveDot.offsetWidth; // restart the animation
+  els.liveDot.classList.add('turn');
 }
 
 // Stop the camera when the tab is hidden, so it is never on in the background.

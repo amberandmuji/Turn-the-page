@@ -6,7 +6,8 @@
 // where x and y are the palm centre in 0..1, already mirrored so that x grows
 // to the right of the screen as the reader sees it in the preview.
 //
-// update() returns one of 'next', 'prev', 'pause' or null.
+// update() returns one of 'next', 'prev', 'up', 'down', 'pause' or null.
+// The readers use 'down' to fold the camera window away and 'up' to open it.
 //
 // How a swipe is recognised
 // -------------------------
@@ -20,6 +21,16 @@
 //   - the return: bringing the hand back after a swipe. A stroke that starts
 //     soon after a page-turning stroke, in the opposite direction, is treated
 //     as a return and never turns the page. Returns are also usually slower.
+//
+// Swiping up and down
+// -------------------
+// Vertical strokes are tracked the same way, with two extra guards, because
+// hands naturally go up and down when you raise them to the camera or lower
+// them to rest:
+//   - the hand must have been held still in view first (steadyMs), so raising
+//     a hand into view isn't a swipe up;
+//   - a swipe down only counts if the hand is still in view when it stops, so
+//     dropping the hand out of view isn't a swipe down.
 
 export const DEFAULTS = {
   sensitivity: 5,       // 1 (needs a big, fast swipe) .. 10 (a small flick is enough)
@@ -33,6 +44,8 @@ export const DEFAULTS = {
   fistHoldMs: 800,      // a fist must be held this long to pause
   fistMinScore: 0.6,    // how sure the recogniser must be that it sees a fist
   maxSlope: 0.7,        // vertical movement allowed per unit of horizontal movement
+  steadyMs: 250,        // the hand must be still this long before a swipe up or down
+  verticalScale: 0.8,   // a vertical swipe needs this share of a sideways swipe's distance
 };
 
 const clampSensitivity = (s) => Math.min(10, Math.max(1, Number(s) || DEFAULTS.sensitivity));
@@ -67,6 +80,9 @@ export class GestureDetector {
     this.lastStroke = null;  // { dir, endT } of the last finished stroke
     this.lastTurnAt = -Infinity;
     this.fistSince = null;
+    this.vstroke = null;     // vertical stroke in progress
+    this.lastVStroke = null; // { dir, endT } of the last vertical stroke that fired
+    this.steadySince = null; // when the hand last came to rest in view
   }
 
   // 0..1 progress towards a pause, for the on-screen indicator.
@@ -84,7 +100,9 @@ export class GestureDetector {
       // alive across a short gap, end it after a long one.
       if (this.last && t - this.last.t > o.gapMs) {
         this.endStroke(this.last.t);
+        this.endVStroke(this.last.t, false);
         this.last = null;
+        this.steadySince = null;
       }
       this.fistSince = null;
       return null;
@@ -93,7 +111,9 @@ export class GestureDetector {
     // Fist: hold it to pause. A closed hand never counts as a swipe.
     if (gesture === 'Closed_Fist' && score >= o.fistMinScore) {
       this.endStroke(t);
+      this.endVStroke(t, false);
       this.last = null;
+      this.steadySince = null;
       if (this.fistSince === null) this.fistSince = t;
       if (t - this.fistSince >= o.fistHoldMs) {
         this.fistSince = null;
@@ -105,7 +125,9 @@ export class GestureDetector {
 
     if (!this.last || t - this.last.t > o.gapMs) {
       this.endStroke(this.last ? this.last.t : t);
+      this.endVStroke(this.last ? this.last.t : t, false);
       this.last = { t, x: hand.x, y: hand.y };
+      this.steadySince = null;
       return null;
     }
 
@@ -115,7 +137,11 @@ export class GestureDetector {
     const vx = (cur.x - this.last.x) / dt;
     const dx = cur.x - this.last.x;
     const dy = cur.y - this.last.y;
+    const vy = dy / dt;
     this.last = cur;
+
+    const vertical = this.vertical(t, vx, vy, dx, dy);
+    if (vertical) return vertical;
 
     const dir = Math.sign(vx);
     const speed = Math.abs(vx);
@@ -144,11 +170,75 @@ export class GestureDetector {
     if (s.dy > Math.abs(s.dx) * o.maxSlope) return null;
     if (t - this.lastTurnAt < o.repeatMs) return null;
 
+    if (this.vstroke?.fired) return null;
     s.fired = true;
     this.lastTurnAt = t;
     // Right-to-left on screen (x shrinking) means next page, like flicking paper.
     const leftward = s.dx < 0;
     return leftward !== o.swapDirection ? 'next' : 'prev';
+  }
+
+  // Tracks up and down strokes. Returns 'up', 'down' or null.
+  vertical(t, vx, vy, dx, dy) {
+    const o = this.opts;
+    const steadyFor = this.steadySince === null ? 0 : t - this.steadySince;
+    if (Math.hypot(vx, vy) < o.endSpeed) {
+      if (this.steadySince === null) this.steadySince = t;
+    } else {
+      this.steadySince = null;
+    }
+
+    const dir = Math.sign(vy);
+    const speed = Math.abs(vy);
+    let result = null;
+
+    // A down stroke fires when it ends with the hand still in view.
+    if (this.vstroke && (speed < o.endSpeed || (dir !== 0 && dir !== this.vstroke.dir))) {
+      result = this.endVStroke(t, true);
+    }
+
+    if (!this.vstroke && speed >= o.startSpeed) {
+      const isReturn = !!this.lastVStroke
+        && this.lastVStroke.dir !== dir
+        && t - this.lastVStroke.endT < o.returnMs;
+      const afterTurn = t - this.lastTurnAt < o.returnMs;
+      this.vstroke = {
+        dir, dy: 0, dx: 0, peak: 0, ready: false, fired: false,
+        armed: steadyFor >= o.steadyMs && !isReturn && !afterTurn,
+      };
+    }
+
+    const s = this.vstroke;
+    if (s) {
+      s.dy += dy;
+      s.dx += Math.abs(dx);
+      s.peak = Math.max(s.peak, speed);
+      s.ready = s.armed
+        && Math.abs(s.dy) >= swipeDistance(o.sensitivity) * o.verticalScale
+        && s.peak >= swipeSpeed(o.sensitivity)
+        && s.dx <= Math.abs(s.dy) * o.maxSlope;
+      // An up stroke fires straight away: raising a hand into view can't
+      // reach it, because the hand wasn't held still first.
+      if (s.ready && s.dir < 0 && !s.fired && t - this.lastTurnAt >= o.repeatMs) {
+        s.fired = true;
+        this.lastTurnAt = t;
+        result = 'up';
+      }
+    }
+    return result;
+  }
+
+  // visible: whether the hand is still in view as the stroke ends.
+  endVStroke(t, visible) {
+    const s = this.vstroke;
+    if (!s) return null;
+    this.vstroke = null;
+    if (!s.fired && s.ready && visible && s.dir > 0 && t - this.lastTurnAt >= this.opts.repeatMs) {
+      s.fired = true;
+      this.lastTurnAt = t;
+    }
+    if (s.fired) this.lastVStroke = { dir: s.dir, endT: t };
+    return s.fired && s.dir > 0 ? 'down' : null;
   }
 
   endStroke(t) {

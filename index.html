@@ -116,11 +116,21 @@
     <span class="privacy"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Your camera and books never leave this device.</span>
   </footer>
 
-  <aside id="preview" class="preview" hidden aria-label="Camera preview">
-    <video id="video" playsinline muted></video>
-    <canvas id="overlay"></canvas>
-    <div id="fist-ring" class="fist-ring" title="Hold a fist to pause"></div>
-    <div id="gesture-hint" class="gesture-hint" aria-live="polite"></div>
+  <aside id="preview" class="preview" hidden aria-label="Camera">
+    <div class="preview-card">
+      <div class="preview-view">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="gesture-hint" class="gesture-hint" aria-live="polite"></div>
+      </div>
+      <div class="preview-bar">
+        <span id="preview-text" class="preview-text"></span>
+        <span id="live-dot" class="live-dot" title="Camera on. Hold a fist to pause." aria-hidden="true"></span>
+        <button id="fold-btn" class="fold-btn" type="button" aria-expanded="true" aria-label="Minimize" title="Minimize (or swipe down)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+        </button>
+      </div>
+    </div>
   </aside>
 
   <div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
@@ -130,6 +140,7 @@
         <li><strong>Open a PDF</strong> from your computer.</li>
         <li><strong>Start gestures</strong> and allow camera access.</li>
         <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
+        <li><strong>Swipe down</strong> to fold the camera window away, and <strong>swipe up</strong> to open it again. Hold your hand still for a moment first.</li>
         <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
         <li><strong>Close any time.</strong> Your place in each book is saved in this browser, and the next time you open that PDF it opens where you left off.</li>
       </ol>
