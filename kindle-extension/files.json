@@ -1,9 +1,9 @@
 {
-  "version": "abc3f6b",
+  "version": "0698435",
   "files": {
     "README.md": "62fe5ca63f3d928c3d56e0bb7941ac6cb18d9fc9a4f45c21301509a1afabcf69",
     "background.js": "02c92c33ea44579ae645eb5327054c73e895759f008dde019cd7b2806e946412",
-    "content.js": "f4b675633a7702cfb1e07ef0346da197961b0ab260c4fc58573a129e81c2efbb",
+    "content.js": "4db51c8e2b10f1019ecfdc87e4093dadf01ccae5f8ee84958faa9d664bdb75cf",
     "icons/icon128.png": "7377a719c2a9f861e0c33ebf0b51071ab324a1cbeef1e9ff20b85289d0c69072",
     "icons/icon16.png": "8d2f992cac20753040f06443ebd178edb653c9727e2bf47d66d5330cab0b8b38",
     "icons/icon32.png": "49c801c93320448903c160d5e5f6013be42de458655ec62335754198d321b436",
