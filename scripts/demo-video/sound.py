@@ -1,6 +1,6 @@
 # Paper page-turn sound, a numpy copy of js/feedback.js, placed at each turn.
 import json, sys, wave, numpy as np
-SR = 48000; DUR = 10.0
+SR = 48000; DUR = float(sys.argv[3]) if len(sys.argv) > 3 else 10.0
 rng = np.random.default_rng(7)
 out = np.zeros(int(SR * DUR))
 def bandpass(x, f, q):
