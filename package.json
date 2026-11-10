@@ -1,0 +1,11 @@
+{
+  "name": "turn-the-page",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Turn PDF pages with hand gestures in front of your webcam. Runs entirely in the browser.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test tests/gestures.test.mjs"
+  }
+}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turn the page</title>
+  <meta name="description" content="Read PDFs hands-free: swipe in the air in front of your webcam to turn the page. Everything stays on your device.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='5' width='11' height='22' rx='2' fill='%230ea5e9'/%3E%3Crect x='17' y='5' width='11' height='22' rx='2' fill='%237dd3fc'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand">Turn the page</div>
+    <div class="nav">
+      <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)">‹</button>
+      <span id="page-label" class="page-label" aria-live="polite"></span>
+      <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)">›</button>
+    </div>
+    <div class="actions">
+      <button id="open-btn">Open PDF</button>
+      <button id="gesture-btn" class="primary" title="Start or stop gestures (G)">Start gestures</button>
+      <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings">⚙</button>
+      <button id="help-btn" class="icon-btn" aria-label="How it works">?</button>
+    </div>
+    <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
+  </header>
+
+  <section id="settings" class="settings" hidden aria-label="Settings">
+    <label class="row">
+      <span>Swipe sensitivity <strong id="sensitivity-value">5</strong></span>
+      <input id="sensitivity" type="range" min="1" max="10" step="1">
+      <small>Higher means a shorter swipe is enough.</small>
+    </label>
+    <label class="check"><input id="opt-spread" type="checkbox"> Two-page spread</label>
+    <label class="check"><input id="opt-sound" type="checkbox"> Sound on page turn</label>
+    <label class="check"><input id="opt-flash" type="checkbox"> Flash on page turn</label>
+    <label class="check"><input id="opt-preview" type="checkbox"> Show camera preview</label>
+  </section>
+
+  <main id="stage" class="stage">
+    <div id="pages" class="pages"></div>
+    <div id="empty" class="empty">
+      <h1>Read without touching the keyboard</h1>
+      <p>Open a PDF from your computer, start gestures, then swipe in the air to turn the page.</p>
+      <button id="empty-open-btn" class="primary">Open a PDF</button>
+      <p class="hint">Or drop a PDF anywhere on this page.</p>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status" aria-live="polite"></span>
+    <span class="privacy">Your camera and books never leave this device.</span>
+  </footer>
+
+  <aside id="preview" class="preview" hidden aria-label="Camera preview">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="fist-ring" class="fist-ring" title="Hold a fist to pause"></div>
+  </aside>
+
+  <div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="help-card">
+      <h2 id="help-title">How to use Turn the page</h2>
+      <ol>
+        <li><strong>Open a PDF</strong> from your computer.</li>
+        <li><strong>Start gestures</strong> and allow camera access.</li>
+        <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
+        <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
+      </ol>
+      <p>Tips: sit about an arm's length from the camera, keep your hand in good light, and make one clear sweep. Arrow keys work too.</p>
+      <p class="privacy">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
+      <button id="help-close" class="primary">Got it</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
