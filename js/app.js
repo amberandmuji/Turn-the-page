@@ -419,6 +419,7 @@ function handPan(t, landmarks) {
     if (!pinchGrabbed) {
       pinchGrabbed = true;
       stopGlide();
+      beginDrag();
       pinchDot.classList.add('grab');
       els.pages.classList.add('grabbing');
       detector.reset();
@@ -439,29 +440,57 @@ function endPinch(t, glide, box) {
   detector.reset();
   // The page stops where you let go, apart from settling sideways on
   // whole page: no glide, so it never drifts.
-  if (glide) snapToPage();
+  if (glide) snapToPage(dragIntent());
   else pinchDot.hidden = true;
 }
 
-// Half a page can't be read. On letting go, slide sideways just enough to
-// show the whole width of whichever page fills most of the view. Up and
-// down stay where you put them, and a page too wide for the window is left
-// alone.
-let snapFrame = 0;
-function snapToPage() {
+// Where a drag started, to tell a deliberate sideways drag from a nudge.
+let dragStart = null;
+function beginDrag() {
+  const el = els.pages;
+  dragStart = { x: el.scrollLeft, y: el.scrollTop, page: mostVisiblePage().index };
+}
+// +1: dragged to see the page on the right, -1: the page on the left, 0: neither.
+// It counts when the drag moved the view clearly more sideways than up or
+// down, by at least a twentieth of the window (and 48 px).
+function dragIntent() {
+  if (!dragStart) return 0;
+  const el = els.pages;
+  const dx = el.scrollLeft - dragStart.x;
+  const dy = el.scrollTop - dragStart.y;
+  const enough = Math.max(48, el.clientWidth * 0.05);
+  return Math.abs(dx) >= enough && Math.abs(dx) > Math.abs(dy) * 1.5 ? Math.sign(dx) : 0;
+}
+
+function mostVisiblePage() {
   const el = els.pages;
   const view = el.getBoundingClientRect();
   const viewRight = view.left + el.clientWidth;
-  let best = null;
+  const pages = [...el.querySelectorAll('.page')].map((page) => page.getBoundingClientRect());
+  let index = -1;
   let bestShown = 0;
-  for (const page of el.querySelectorAll('.page')) {
-    const r = page.getBoundingClientRect();
+  pages.forEach((r, i) => {
     const shown = Math.min(r.right, viewRight) - Math.max(r.left, view.left);
     if (shown > bestShown) {
       bestShown = shown;
-      best = r;
+      index = i;
     }
-  }
+  });
+  return { index, pages, view, viewRight };
+}
+
+// Half a page can't be read. On letting go, slide sideways just enough to
+// show the whole width of a page: the one on the side you dragged towards
+// if the drag was clearly sideways, otherwise whichever fills most of the
+// view. Up and down stay where you put them, and a page too wide for the
+// window is left alone.
+let snapFrame = 0;
+function snapToPage(intent = 0) {
+  const el = els.pages;
+  const { index, pages, view, viewRight } = mostVisiblePage();
+  const startPage = dragStart?.page ?? index;
+  dragStart = null;
+  const best = (intent && pages[startPage + intent]) || pages[index];
   const margin = 16;
   if (!best || best.width > el.clientWidth - margin * 2) return;
   let delta = 0;
@@ -512,6 +541,7 @@ els.pages.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'mouse' || e.button !== 0 || reader.zoom <= 1) return;
   stopGlide();
   mouseDrag = { x: e.clientX, y: e.clientY, samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }] };
+  beginDrag();
   els.pages.setPointerCapture(e.pointerId);
   els.pages.classList.add('grabbing');
   e.preventDefault();
@@ -536,7 +566,7 @@ function endMouseDrag(e) {
     const dt = Math.max(1, b.t - a.t) / 1000;
     startGlide(0, -(b.y - a.y) / dt); // sideways is settled by the snap
   }
-  snapToPage();
+  snapToPage(dragIntent());
 }
 els.pages.addEventListener('pointerup', endMouseDrag);
 els.pages.addEventListener('pointercancel', endMouseDrag);
