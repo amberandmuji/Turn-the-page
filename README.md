@@ -14,7 +14,7 @@ Built by Amber.
 
 Arrow keys, Page Up/Down and the space bar also turn pages.
 
-Settings (gear icon): swipe sensitivity, two-page spread, sound on page turn, edge flash on page turn, and the camera preview. The app remembers your settings and the last page of each book in this browser.
+Settings (gear icon): swipe sensitivity, two-page spread, sound on page turn, the page-turn animation, and the camera preview. The app remembers your settings and the last page of each book in this browser.
 
 Works best in Chrome or Edge on a laptop or desktop, about an arm's length from the camera, with your hand in good light.
 
@@ -45,7 +45,7 @@ Everything runs in your browser. Hand tracking uses Google's MediaPipe gesture r
 2. Camera preview and hand tracking
 3. Swipe to turn, with a cooldown so one swipe turns one page
 4. Hold a fist to pause and turn the camera off
-5. Sound or edge flash on each turn, and a sensitivity setting
+5. Sound on each turn, and a sensitivity setting
 6. Two-page spread and remembering the last page of each book
 7. Testing across lighting, distance and either hand, plus a first-run how-to
 
@@ -70,7 +70,7 @@ npm run sync:extension   # copies the shared code into the Kindle extension
 | `js/reader.js` | Renders PDFs with PDF.js, handles the spread and saved page |
 | `js/camera.js` | Webcam and MediaPipe hand tracking |
 | `js/gestures.js` | Turns hand movement into next, previous and pause. No browser code, so it can be tested and reused for Kindle |
-| `js/feedback.js` | Page-turn sound and flash |
+| `js/feedback.js` | Page-turn sound |
 | `vendor/` | PDF.js 4.4.168 (Apache-2.0) and MediaPipe Tasks Vision 0.10.14 (Apache-2.0) |
 | `models/gesture_recognizer.task` | MediaPipe's gesture recogniser model (Apache-2.0) |
 | `kindle-extension/` | The Chrome extension for Kindle Cloud Reader (phase 2) |

@@ -138,7 +138,7 @@
     return { ok: false };
   }
 
-  // --- the corner card and edge flash ------------------------------------------
+  // --- the corner card --------------------------------------------------------
   // One card that folds down into a small pill. The fold is a clip-path morph
   // from the whole card to its bottom-right corner, where the pill's dot and
   // button already sit, so minimizing reads as the card tucking itself away.
@@ -300,30 +300,13 @@
       .warn strong { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
       .warn small { font-size: 12.5px; line-height: 1.35; color: #b8bec6; }
 
-      /* Page-turn glow on the side the page turns from */
-      .edge {
-        position: fixed; top: 0; bottom: 0; width: 72px; z-index: 2147483646;
-        pointer-events: none; opacity: 0;
-      }
-      .edge.left { left: 0; background: linear-gradient(to right, rgba(14,165,233,.38), rgba(14,165,233,0)); transform-origin: 0 50%; }
-      .edge.right { right: 0; background: linear-gradient(to left, rgba(14,165,233,.38), rgba(14,165,233,0)); transform-origin: 100% 50%; }
-      .edge.go { animation: sweep .5s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); }
-      @keyframes sweep {
-        0% { opacity: 1; transform: scaleX(1.4); }
-        100% { opacity: 0; transform: scaleX(.6); }
-      }
-
       @media (prefers-reduced-motion: reduce) {
         .dock, .dock.show { transform: none; }
         .card, .dock.min .card { transition-duration: .01s; }
-        .edge.go { animation: fade .3s ease-out; }
-        @keyframes fade { 0% { opacity: .9; } 100% { opacity: 0; } }
         .dot.turn::before { animation: none; }
       }
     </style>
     <div class="cue" aria-hidden="true"><span class="cue-badge"><svg viewBox="0 0 24 24"><path d=""/></svg></span><span></span></div>
-    <div class="edge left"></div>
-    <div class="edge right"></div>
     <div class="dock">
       <div class="warn" role="status" aria-live="polite">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 4.2L2.6 17.5a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4.5M12 17.2h.01"/></svg>
@@ -359,9 +342,8 @@
   const hint = root.querySelector('.hint');
   const cue = root.querySelector('.cue');
   let hintTimer = null;
-  const edges = { next: root.querySelector('.edge.right'), prev: root.querySelector('.edge.left') };
 
-  let settings = { flash: true, preview: true, swap: false };
+  let settings = { preview: true, swap: false };
   let mode = 'off';
   let minimised = false;
   let hideTimer = null;
@@ -508,22 +490,17 @@
     hintTimer = setTimeout(() => hint.classList.remove('show'), 900);
   }
 
-  function flash(dir) {
+  function pulseDot() {
     dot.classList.remove('turn');
     void dot.offsetWidth;
     dot.classList.add('turn');
-    if (!settings.flash) return;
-    const edge = edges[dir];
-    edge.classList.remove('go');
-    void edge.offsetWidth; // restart the animation
-    edge.classList.add('go');
   }
 
   // --- messages from the extension ------------------------------------------------
 
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     if (msg.type === 'turn') {
-      flash(msg.dir);
+      pulseDot();
       if (!msg.test) showHint(msg.dir);
       turn(msg.dir).then((result) => {
         if (!msg.test) showCue(result.ok ? msg.dir : 'still');

@@ -4,7 +4,6 @@ export const DEFAULT_SETTINGS = {
   sensitivity: 5,
   swap: false,     // true: left-to-right means next page
   volume: 0.7,     // page-turn sound, 0 = off (same default as the PDF reader)
-  flash: true,     // edge flash on each turn
   preview: true,   // hand preview card on the Kindle page
 };
 

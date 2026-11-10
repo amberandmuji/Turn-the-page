@@ -7,7 +7,7 @@ const els = {
   sensitivity: $('sensitivity'), sensitivityValue: $('sensitivity-value'),
   rtl: $('dir-rtl'), ltr: $('dir-ltr'),
   volume: $('volume'), volumeValue: $('volume-value'),
-  flash: $('flash'), preview: $('preview'),
+  preview: $('preview'),
   testPrev: $('test-prev'), testNext: $('test-next'), testResult: $('test-result'),
 };
 
@@ -44,7 +44,6 @@ function render() {
   els.ltr.checked = settings.swap;
   els.volume.value = settings.volume;
   els.volumeValue.textContent = settings.volume > 0 ? `${Math.round(settings.volume * 100)}%` : 'Off';
-  els.flash.checked = settings.flash;
   els.preview.checked = settings.preview;
 }
 
@@ -62,7 +61,6 @@ els.sensitivity.addEventListener('input', () => save({ sensitivity: Number(els.s
 els.rtl.addEventListener('change', () => save({ swap: false }));
 els.ltr.addEventListener('change', () => save({ swap: true }));
 els.volume.addEventListener('input', () => save({ volume: Number(els.volume.value) }));
-els.flash.addEventListener('change', () => save({ flash: els.flash.checked }));
 els.preview.addEventListener('change', () => save({ preview: els.preview.checked }));
 
 async function testTurn(dir) {

@@ -5,7 +5,7 @@ import { HandWatch, WARNINGS } from './handwatch.js';
 import { PinchGrab } from './pinch.js';
 import { flipTurn } from './flip.js';
 import { bookId, listBooks, getBook, rememberBook, updateBook, forgetBook, forgetAll } from './library.js';
-import { playTurnSound, flashEdge } from './feedback.js';
+import { playTurnSound } from './feedback.js';
 import { load, save } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -34,7 +34,6 @@ const els = {
   sensitivityValue: $('sensitivity-value'),
   spread: $('opt-spread'),
   sound: $('opt-sound'),
-  flash: $('opt-flash'),
   showPreview: $('opt-preview'),
   swap: $('opt-swap'),
   noSwap: $('opt-noswap'),
@@ -82,7 +81,6 @@ const settings = {
   swap: false,
   sound: true,
   volume: 0.7,
-  flash: true,
   preview: true,
   recent: true,
   pageFlip: true,
@@ -122,7 +120,6 @@ function applySettings() {
   els.volume.disabled = !settings.sound;
   els.volume.style.setProperty('--fill', `${settings.volume * 100}%`);
   els.sensitivity.style.setProperty('--fill', `${((settings.sensitivity - 1) / 9) * 100}%`);
-  els.flash.checked = settings.flash;
   els.pageFlip.checked = settings.pageFlip;
   els.showPreview.checked = settings.preview;
   els.swap.checked = settings.swap;
@@ -157,7 +154,6 @@ els.volume.addEventListener('input', () => updateSetting('volume', Number(els.vo
 // Let go of the volume slider to hear how loud a page turn will be.
 els.volume.addEventListener('change', () => playTurnSound('next', settings.volume));
 els.sound.addEventListener('change', () => updateSetting('sound', els.sound.checked));
-els.flash.addEventListener('change', () => updateSetting('flash', els.flash.checked));
 els.pageFlip.addEventListener('change', () => updateSetting('pageFlip', els.pageFlip.checked));
 els.showPreview.addEventListener('change', () => updateSetting('preview', els.showPreview.checked));
 els.keepRecent.addEventListener('change', async () => {
@@ -303,7 +299,6 @@ async function turn(direction) {
   if (!moved) return false;
   if (!els.resume.hidden) hideResume();
   if (settings.sound) playTurnSound(direction, settings.volume);
-  if (settings.flash) flashEdge(els.stage, direction);
   return true;
 }
 
@@ -911,10 +906,7 @@ async function jumpTo(page) {
   if (!page) return;
   if (phone()) setTocOpen(false, { remember: false });
   const moved = await reader.goTo(page);
-  if (moved) {
-    hideResume();
-    if (settings.flash) flashEdge(els.stage, 'next');
-  }
+  if (moved) hideResume();
 }
 
 els.gotoForm.addEventListener('submit', (e) => {

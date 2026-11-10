@@ -1,4 +1,4 @@
-// A paper page-turn sound and an edge flash when the page turns.
+// A paper page-turn sound when the page turns.
 // The sound is made on the fly from filtered noise, like paper rustling:
 // a short swish as the page lifts and slides, then a soft flap as it lands.
 // No audio files are needed.
@@ -57,13 +57,6 @@ export function playTurnSound(direction, volume = 1) {
     // The page lands: a soft, low flap.
     burst(audio, out, t + 0.24, { dur: 0.12, from: 700 * pitch, to: 300 * pitch, q: 1.2, peak: 0.45, attack: 0.008 });
   } catch {
-    // Audio blocked or unavailable; the flash still shows.
+    // Audio blocked or unavailable; the page still turns silently.
   }
-}
-
-export function flashEdge(element, direction) {
-  const cls = direction === 'next' ? 'flash-next' : 'flash-prev';
-  element.classList.remove('flash-next', 'flash-prev');
-  void element.offsetWidth; // restart the animation
-  element.classList.add(cls);
 }
