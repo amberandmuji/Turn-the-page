@@ -18,7 +18,7 @@ function noiseBuffer(ctx) {
 }
 
 // One burst of filtered noise: a band that sweeps from one pitch to another.
-function burst(ctx, t, { dur, from, to, q, peak, attack }) {
+function burst(ctx, out, t, { dur, from, to, q, peak, attack }) {
   const src = ctx.createBufferSource();
   src.buffer = noise;
   src.playbackRate.value = 0.9 + Math.random() * 0.2; // no two turns sound the same
@@ -31,25 +31,31 @@ function burst(ctx, t, { dur, from, to, q, peak, attack }) {
   gain.gain.setValueAtTime(0.0001, t);
   gain.gain.exponentialRampToValueAtTime(peak, t + attack);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  src.connect(band).connect(gain).connect(ctx.destination);
+  src.connect(band).connect(gain).connect(out);
   src.start(t, Math.random() * 0.2);
   src.stop(t + dur + 0.02);
 }
 
-export function playTurnSound(direction) {
+// volume runs from 0 (silent) to 1 (full).
+export function playTurnSound(direction, volume = 1) {
+  if (volume <= 0) return;
   try {
     audio = audio || new AudioContext();
     if (audio.state === 'suspended') audio.resume();
     noise = noise || noiseBuffer(audio);
     const t = audio.currentTime + 0.01;
+    // Squared, so the slider feels even to the ear.
+    const out = audio.createGain();
+    out.gain.value = volume * volume;
+    out.connect(audio.destination);
     // Turning back sounds a touch lower, so the two directions feel different.
     const pitch = direction === 'next' ? 1 : 0.85;
     // The page lifts and slides across: a rising, airy swish.
-    burst(audio, t, { dur: 0.28, from: 1800 * pitch, to: 4200 * pitch, q: 0.9, peak: 0.55, attack: 0.09 });
+    burst(audio, out, t, { dur: 0.28, from: 1800 * pitch, to: 4200 * pitch, q: 0.9, peak: 0.55, attack: 0.09 });
     // Paper rubbing against paper underneath it.
-    burst(audio, t + 0.04, { dur: 0.22, from: 5200 * pitch, to: 2600 * pitch, q: 2.5, peak: 0.18, attack: 0.05 });
+    burst(audio, out, t + 0.04, { dur: 0.22, from: 5200 * pitch, to: 2600 * pitch, q: 2.5, peak: 0.18, attack: 0.05 });
     // The page lands: a soft, low flap.
-    burst(audio, t + 0.24, { dur: 0.12, from: 700 * pitch, to: 300 * pitch, q: 1.2, peak: 0.45, attack: 0.008 });
+    burst(audio, out, t + 0.24, { dur: 0.12, from: 700 * pitch, to: 300 * pitch, q: 1.2, peak: 0.45, attack: 0.008 });
   } catch {
     // Audio blocked or unavailable; the flash still shows.
   }

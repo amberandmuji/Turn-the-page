@@ -31,8 +31,15 @@ const els = {
   flash: $('opt-flash'),
   showPreview: $('opt-preview'),
   swap: $('opt-swap'),
+  noSwap: $('opt-noswap'),
+  single: $('opt-single'),
+  volume: $('volume'),
+  volumeValue: $('volume-value'),
   gestureHint: $('gesture-hint'),
   help: $('help'),
+  resume: $('resume'),
+  resumeText: $('resume-text'),
+  resumeRestart: $('resume-restart'),
   helpBtn: $('help-btn'),
   helpClose: $('help-close'),
 };
@@ -43,6 +50,7 @@ const settings = {
   spread: true,
   swap: false,
   sound: true,
+  volume: 0.7,
   flash: true,
   preview: true,
   ...load('settings-v2', {}),
@@ -67,10 +75,17 @@ function applySettings() {
   els.sensitivity.value = settings.sensitivity;
   els.sensitivityValue.textContent = settings.sensitivity;
   els.spread.checked = settings.spread;
+  els.single.checked = !settings.spread;
   els.sound.checked = settings.sound;
+  els.volume.value = Math.round(settings.volume * 100);
+  els.volumeValue.textContent = `${Math.round(settings.volume * 100)}%`;
+  els.volume.disabled = !settings.sound;
+  els.volume.style.setProperty('--fill', `${settings.volume * 100}%`);
+  els.sensitivity.style.setProperty('--fill', `${((settings.sensitivity - 1) / 9) * 100}%`);
   els.flash.checked = settings.flash;
   els.showPreview.checked = settings.preview;
   els.swap.checked = settings.swap;
+  els.noSwap.checked = !settings.swap;
   detector.setSwapDirection(settings.swap);
   els.preview.hidden = !(settings.preview && gestureState === 'on');
   detector.setSensitivity(settings.sensitivity);
@@ -83,18 +98,25 @@ function updateSetting(key, value) {
 }
 
 els.sensitivity.addEventListener('input', () => updateSetting('sensitivity', Number(els.sensitivity.value)));
-els.spread.addEventListener('change', async () => {
-  updateSetting('spread', els.spread.checked);
-  await reader.setSpread(wantSpread());
-});
-els.swap.addEventListener('change', () => updateSetting('swap', els.swap.checked));
+for (const radio of [els.spread, els.single]) {
+  radio.addEventListener('change', async () => {
+    updateSetting('spread', els.spread.checked);
+    await reader.setSpread(wantSpread());
+  });
+}
+for (const radio of [els.swap, els.noSwap]) {
+  radio.addEventListener('change', () => updateSetting('swap', els.swap.checked));
+}
+els.volume.addEventListener('input', () => updateSetting('volume', Number(els.volume.value) / 100));
+// Let go of the volume slider to hear how loud a page turn will be.
+els.volume.addEventListener('change', () => playTurnSound('next', settings.volume));
 els.sound.addEventListener('change', () => updateSetting('sound', els.sound.checked));
 els.flash.addEventListener('change', () => updateSetting('flash', els.flash.checked));
 els.showPreview.addEventListener('change', () => updateSetting('preview', els.showPreview.checked));
 
-els.settingsBtn.addEventListener('click', () => {
-  els.settings.hidden = !els.settings.hidden;
-  els.settingsBtn.setAttribute('aria-expanded', String(!els.settings.hidden));
+// The panel is a popover: the browser handles opening, Escape and clicking outside.
+els.settings.addEventListener('toggle', (e) => {
+  els.settingsBtn.setAttribute('aria-expanded', String(e.newState === 'open'));
 });
 
 // ---------- Help ----------
@@ -131,6 +153,7 @@ async function openFile(file) {
     els.empty.hidden = true;
     reader.spread = wantSpread();
     await reader.open(file);
+    showResume();
     document.title = `${file.name.replace(/\.pdf$/i, '')} · Turn the page`;
     setStatus(gestureState === 'on' ? 'Swipe to turn the page' : '');
   } catch (err) {
@@ -139,6 +162,29 @@ async function openFile(file) {
     setStatus('Couldn\'t open that PDF.');
   }
 }
+
+// ---------- Bookmark ----------
+// The reader saves the page for each book as you go. When a book reopens
+// part-way through, say so, and offer to go back to the start.
+let resumeTimer;
+function hideResume() {
+  clearTimeout(resumeTimer);
+  els.resume.classList.remove('show');
+  resumeTimer = setTimeout(() => { els.resume.hidden = true; }, 200);
+}
+function showResume() {
+  clearTimeout(resumeTimer);
+  if (reader.page <= 1) { els.resume.hidden = true; return; }
+  els.resumeText.textContent = `Picked up where you left off, on page ${reader.page}.`;
+  els.resume.hidden = false;
+  requestAnimationFrame(() => els.resume.classList.add('show'));
+  resumeTimer = setTimeout(hideResume, 8000);
+}
+els.resumeRestart.addEventListener('click', async () => {
+  hideResume();
+  reader.page = 1;
+  await reader.render();
+});
 
 const pickFile = () => els.fileInput.click();
 els.openBtn.addEventListener('click', pickFile);
@@ -169,7 +215,8 @@ function showGestureHint(direction) {
 async function turn(direction) {
   const moved = direction === 'next' ? await reader.next() : await reader.prev();
   if (!moved) return;
-  if (settings.sound) playTurnSound(direction);
+  if (!els.resume.hidden) hideResume();
+  if (settings.sound) playTurnSound(direction, settings.volume);
   if (settings.flash) flashEdge(els.stage, direction);
 }
 
@@ -190,8 +237,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Refit the page whenever the reading area changes size: window resizes,
-// and the settings panel opening or closing.
+// Refit the page whenever the reading area changes size (window resizes).
 let resizeTimer;
 new ResizeObserver(() => {
   clearTimeout(resizeTimer);

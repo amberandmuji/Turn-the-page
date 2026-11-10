@@ -22,33 +22,80 @@
     <div class="actions">
       <button id="open-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="btn-text">Open PDF</span></button>
       <button id="gesture-btn" class="primary gesture-btn" title="Start or stop gestures (G)">Start gestures</button>
-      <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings" title="Settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+      <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings" popovertarget="settings" title="Settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       <button id="help-btn" class="icon-btn" aria-label="How it works" title="How it works"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/></svg></button>
     </div>
     <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
   </header>
 
-  <section id="settings" class="settings" hidden aria-label="Settings">
-    <fieldset>
-      <legend>Gestures</legend>
-      <label class="range">
-        <span class="range-head">Swipe sensitivity <output id="sensitivity-value" for="sensitivity">5</output></span>
-        <input id="sensitivity" type="range" min="1" max="10" step="1" aria-describedby="sensitivity-note">
-        <small id="sensitivity-note">Higher means a shorter swipe is enough.</small>
+  <section id="settings" class="settings" popover aria-labelledby="settings-title">
+    <header class="settings-head">
+      <h2 id="settings-title">Settings</h2>
+      <button class="icon-btn ghost" popovertarget="settings" popovertargetaction="hide" aria-label="Close settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+
+    <div class="group" role="group" aria-labelledby="g-gestures">
+      <h3 id="g-gestures">Gestures</h3>
+      <div class="field">
+        <div class="field-head">
+          <label for="sensitivity">Swipe sensitivity</label>
+          <output id="sensitivity-value" for="sensitivity">5</output>
+        </div>
+        <input id="sensitivity" class="slider" type="range" min="1" max="10" step="1" aria-describedby="sensitivity-note">
+        <div class="scale" aria-hidden="true"><span>Long swipe</span><span>Short swipe</span></div>
+        <p id="sensitivity-note" class="visually-hidden">Higher means a shorter swipe is enough.</p>
+      </div>
+      <fieldset class="field">
+        <legend>Next page when you swipe</legend>
+        <div class="segmented">
+          <input type="radio" name="swipe-dir" id="opt-noswap"><label for="opt-noswap">Right to left</label>
+          <input type="radio" name="swipe-dir" id="opt-swap"><label for="opt-swap">Left to right</label>
+        </div>
+      </fieldset>
+      <label class="switch-row">
+        <span>Camera preview<small>A small mirror of what the camera sees</small></span>
+        <input id="opt-preview" type="checkbox" role="switch" class="switch">
       </label>
-      <label class="check"><input id="opt-swap" type="checkbox"> Swap swipe direction</label>
-      <label class="check"><input id="opt-preview" type="checkbox"> Show camera preview</label>
-    </fieldset>
-    <fieldset>
-      <legend>Reading</legend>
-      <label class="check"><input id="opt-spread" type="checkbox"> Two-page spread</label>
-      <label class="check"><input id="opt-sound" type="checkbox"> Sound on page turn</label>
-      <label class="check"><input id="opt-flash" type="checkbox"> Flash on page turn</label>
-    </fieldset>
+    </div>
+
+    <div class="group" role="group" aria-labelledby="g-reading">
+      <h3 id="g-reading">Reading</h3>
+      <fieldset class="field">
+        <legend>Layout</legend>
+        <div class="segmented">
+          <input type="radio" name="layout" id="opt-single"><label for="opt-single"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="4" width="10" height="16" rx="1.5"/></svg>Single page</label>
+          <input type="radio" name="layout" id="opt-spread"><label for="opt-spread"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8.5" height="14" rx="1.5"/><rect x="12.5" y="5" width="8.5" height="14" rx="1.5"/></svg>Two pages</label>
+        </div>
+        <small class="note">Narrow windows always show one page.</small>
+      </fieldset>
+    </div>
+
+    <div class="group" role="group" aria-labelledby="g-feedback">
+      <h3 id="g-feedback">Page-turn feedback</h3>
+      <label class="switch-row">
+        <span>Sound</span>
+        <input id="opt-sound" type="checkbox" role="switch" class="switch">
+      </label>
+      <div class="field volume">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/></svg>
+        <input id="volume" class="slider" type="range" min="0" max="100" step="5" aria-label="Sound volume">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        <output id="volume-value" for="volume">70%</output>
+      </div>
+      <label class="switch-row">
+        <span>Edge flash<small>A brief glow on the side the page turns from</small></span>
+        <input id="opt-flash" type="checkbox" role="switch" class="switch">
+      </label>
+    </div>
   </section>
 
   <main id="stage" class="stage">
     <div id="pages" class="pages"></div>
+    <div id="resume" class="resume" role="status" hidden>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/></svg>
+      <span id="resume-text"></span>
+      <button id="resume-restart" class="ghost-btn">Start from page 1</button>
+    </div>
     <div id="empty" class="empty">
       <svg class="empty-art" viewBox="0 0 200 120" aria-hidden="true">
         <rect class="sheet" x="40" y="22" width="58" height="80" rx="3"/>
@@ -84,6 +131,7 @@
         <li><strong>Start gestures</strong> and allow camera access.</li>
         <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
         <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
+        <li><strong>Close any time.</strong> Your place in each book is saved in this browser, and the next time you open that PDF it opens where you left off.</li>
       </ol>
       <p class="tips"><strong>Tips:</strong> sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. Arrow keys (<kbd>←</kbd> <kbd>→</kbd>) work too.</p>
       <p class="privacy note">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
