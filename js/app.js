@@ -153,11 +153,13 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Refit the page whenever the reading area changes size: window resizes,
+// and the settings panel opening or closing.
 let resizeTimer;
-window.addEventListener('resize', () => {
+new ResizeObserver(() => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => reader.render(), 150);
-});
+}).observe(els.stage);
 
 // ---------- Gestures ----------
 function setStatus(text) {

@@ -28,9 +28,11 @@ html, body {
   margin: 0;
 }
 
+/* A column: toolbar, settings (when open), the book, status bar.
+   Flex rather than grid, so hiding the settings panel can't shift rows. */
 body {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   color: var(--text);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -96,6 +98,7 @@ button.primary.active {
 
 .stage {
   position: relative;
+  flex: 1;
   overflow: hidden;
   min-height: 0;
 }
