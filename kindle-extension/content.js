@@ -239,27 +239,38 @@
       .fold svg { width: 16px; height: 16px; transition: transform .32s var(--ease-out); }
       .dock.min .fold svg { transform: rotate(180deg); }
 
-      /* Big gesture cue in the middle of the page, as in the PDF reader */
+      /* Gesture cue in the middle of the page: a small pill of frosted glass,
+         as in the PDF reader */
       .cue {
         --p: 0;
         position: fixed; left: 50%; top: 50%; z-index: 2147483647;
-        display: grid; justify-items: center; gap: 10px; padding: 18px 22px 16px; min-width: 168px;
-        border-radius: 20px; background: rgba(22,24,27,.82); color: #fff; pointer-events: none;
-        font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.01em;
-        box-shadow: 0 4px 10px rgba(0,0,0,.2), 0 18px 40px rgba(0,0,0,.25);
-        opacity: 0; transform: translate(-50%, -50%) scale(.92); visibility: hidden;
+        display: flex; align-items: center; gap: 10px; padding: 7px 18px 7px 7px;
+        border-radius: 999px; color: #1f2328; pointer-events: none;
+        background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.2));
+        border: 1px solid rgba(255,255,255,.55);
+        -webkit-backdrop-filter: blur(10px) saturate(1.8); backdrop-filter: blur(10px) saturate(1.8);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 1px rgba(255,255,255,.2),
+          0 1px 2px rgba(31,35,40,.08), 0 8px 24px rgba(31,35,40,.12);
+        font: 600 15px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.01em;
+        opacity: 0; transform: translate(-50%, -50%) scale(.94); visibility: hidden;
         transition: opacity .16s ease, transform .26s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s .26s;
       }
-      .cue.show { opacity: 1; transform: translate(-50%, -50%); visibility: visible; transition-delay: 0s; }
-      .cue-badge { position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.1); }
-      .cue.holding .cue-badge::after {
-        content: ""; position: absolute; inset: -5px; border-radius: 50%;
-        background: conic-gradient(#f87171 calc(var(--p) * 360deg), rgba(255,255,255,.15) 0);
-        -webkit-mask: radial-gradient(circle, transparent 37px, #000 38px);
-                mask: radial-gradient(circle, transparent 37px, #000 38px);
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .cue { background: rgba(255,255,255,.88); }
       }
-      .cue svg { width: 44px; height: 44px; fill: none; stroke: #7dd3fc; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-      .cue span:last-child { white-space: nowrap; }
+      .cue.show { opacity: 1; transform: translate(-50%, -50%); visibility: visible; transition-delay: 0s; }
+      .cue-badge {
+        position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+        background: rgba(255,255,255,.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
+      }
+      .cue.holding .cue-badge::after {
+        content: ""; position: absolute; inset: -3px; border-radius: 50%;
+        background: conic-gradient(#dc2626 calc(var(--p) * 360deg), rgba(31,35,40,.12) 0);
+        -webkit-mask: radial-gradient(circle, transparent 17px, #000 17.5px);
+                mask: radial-gradient(circle, transparent 17px, #000 17.5px);
+      }
+      .cue svg { width: 20px; height: 20px; fill: none; stroke: #0369a1; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .cue span:last-child { white-space: nowrap; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
 
       /* Which way the last gesture was read, as in the PDF reader */
       .hint {

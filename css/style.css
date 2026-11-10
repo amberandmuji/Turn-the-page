@@ -814,26 +814,36 @@ body:has(.page-label:empty) .toc-btn { display: none; }
   border-color: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
-/* Big gesture cue in the middle of the book, readable from across the room */
+/* Gesture cue in the middle of the book: a small pill of frosted glass, so
+   the page still shows through around and behind it. */
 .cue {
   --p: 0;
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 5;
-  display: grid;
-  justify-items: center;
+  display: flex;
+  align-items: center;
   gap: 10px;
-  padding: 18px 22px 16px;
-  min-width: 168px;
-  border-radius: 20px;
-  background: rgba(22, 24, 27, 0.82);
-  color: #fff;
+  padding: 7px 18px 7px 7px;
+  border-radius: 999px;
+  color: #1f2328;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(10px) saturate(1.8);
+  backdrop-filter: blur(10px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(31, 35, 40, 0.08),
+    0 8px 24px rgba(31, 35, 40, 0.12);
   pointer-events: none;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 18px 40px rgba(0, 0, 0, 0.25);
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.92);
+  transform: translate(-50%, -50%) scale(0.94);
   transition: opacity 160ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cue { background: rgba(255, 255, 255, 0.88); }
 }
 .cue[hidden] { display: none; }
 .cue.show { opacity: 1; transform: translate(-50%, -50%); }
@@ -841,30 +851,37 @@ body:has(.page-label:empty) .toc-btn { display: none; }
   position: relative;
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 .cue.holding .cue-badge::after {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -3px;
   border-radius: 50%;
-  background: conic-gradient(#f87171 calc(var(--p) * 360deg), rgba(255, 255, 255, 0.15) 0);
-  -webkit-mask: radial-gradient(circle, transparent 37px, #000 38px);
-  mask: radial-gradient(circle, transparent 37px, #000 38px);
+  background: conic-gradient(#dc2626 calc(var(--p) * 360deg), rgba(31, 35, 40, 0.12) 0);
+  -webkit-mask: radial-gradient(circle, transparent 17px, #000 17.5px);
+  mask: radial-gradient(circle, transparent 17px, #000 17.5px);
 }
 .cue-icon {
-  width: 44px;
-  height: 44px;
+  width: 20px;
+  height: 20px;
   fill: none;
-  stroke: #7dd3fc;
-  stroke-width: 2.2;
+  stroke: #0369a1;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.cue-text { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.cue-text {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
 
 .goto-error { margin: 0; font-size: 13px; color: var(--live); }
 .goto-error:empty { display: none; }
@@ -876,34 +893,15 @@ body:has(.page-label:empty) .gesture-btn:not(.active):not(:disabled) {
   color: var(--text);
 }
 
-/* Page-turn animation (js/flip.js): pictures of the pages, and one leaf
-   that turns over the spine. */
+/* Page-turn animation (js/flip.js): one canvas over the book while a page
+   curls from its corner and turns over. */
 .flip {
   position: absolute;
   inset: 0;
   z-index: 2;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  perspective: 2400px;
-}
-.flip-cover, .flip-leaf { position: absolute; }
-.flip canvas { display: block; width: 100%; height: 100%; }
-.flip-cover { box-shadow: var(--page-shadow); border-radius: 2px; overflow: hidden; }
-.flip-leaf { transform-style: preserve-3d; will-change: transform; }
-.flip-side {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 2px;
-  background: #fff;
-  box-shadow: var(--page-shadow);
-  backface-visibility: hidden;
-}
-.flip-side.back { transform: rotateY(180deg); }
-.flip-shade {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  background: linear-gradient(to right, rgba(31, 35, 40, 0.45), rgba(31, 35, 40, 0.12) 60%, rgba(31, 35, 40, 0.3));
 }
 
 /* Edge flash on page turn */
