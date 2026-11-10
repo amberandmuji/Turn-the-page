@@ -437,8 +437,49 @@ function endPinch(t, glide, box) {
   pinchDot.classList.remove('grab');
   els.pages.classList.remove('grabbing');
   detector.reset();
-  // The page stops where you let go: no glide, so it never drifts.
-  if (!glide) pinchDot.hidden = true;
+  // The page stops where you let go, apart from settling sideways on
+  // whole page: no glide, so it never drifts.
+  if (glide) snapToPage();
+  else pinchDot.hidden = true;
+}
+
+// Half a page can't be read. On letting go, slide sideways just enough to
+// show the whole width of whichever page fills most of the view. Up and
+// down stay where you put them, and a page too wide for the window is left
+// alone.
+let snapFrame = 0;
+function snapToPage() {
+  const el = els.pages;
+  const view = el.getBoundingClientRect();
+  const viewRight = view.left + el.clientWidth;
+  let best = null;
+  let bestShown = 0;
+  for (const page of el.querySelectorAll('.page')) {
+    const r = page.getBoundingClientRect();
+    const shown = Math.min(r.right, viewRight) - Math.max(r.left, view.left);
+    if (shown > bestShown) {
+      bestShown = shown;
+      best = r;
+    }
+  }
+  const margin = 16;
+  if (!best || best.width > el.clientWidth - margin * 2) return;
+  let delta = 0;
+  if (best.left < view.left + margin) delta = best.left - view.left - margin;
+  else if (best.right > viewRight - margin) delta = best.right - viewRight + margin;
+  if (Math.abs(delta) < 1) return;
+
+  cancelAnimationFrame(snapFrame);
+  const from = el.scrollLeft;
+  const to = from + delta;
+  const start = performance.now();
+  const ms = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 360;
+  const step = (now) => {
+    const k = Math.min(1, (now - start) / ms);
+    el.scrollLeft = from + (to - from) * (1 - (1 - k) ** 3); // ease out
+    if (k < 1) snapFrame = requestAnimationFrame(step);
+  };
+  snapFrame = requestAnimationFrame(step);
 }
 
 // A quick mouse flick keeps a little momentum, then eases to a stop. The
@@ -462,6 +503,7 @@ function startGlide(vx, vy) {
 }
 function stopGlide() {
   cancelAnimationFrame(glideFrame);
+  cancelAnimationFrame(snapFrame);
 }
 
 // The mouse does the same: click and drag a zoomed page.
@@ -492,8 +534,9 @@ function endMouseDrag(e) {
     const a = recent[0];
     const b = recent[recent.length - 1];
     const dt = Math.max(1, b.t - a.t) / 1000;
-    startGlide(-(b.x - a.x) / dt, -(b.y - a.y) / dt);
+    startGlide(0, -(b.y - a.y) / dt); // sideways is settled by the snap
   }
+  snapToPage();
 }
 els.pages.addEventListener('pointerup', endMouseDrag);
 els.pages.addEventListener('pointercancel', endMouseDrag);
