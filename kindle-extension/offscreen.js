@@ -4,6 +4,7 @@
 import { GestureDetector, palmCentre } from './shared/js/gestures.js';
 import { HandCamera } from './shared/js/camera.js';
 import { playTurnSound } from './shared/js/feedback.js';
+import { HandWatch, WARNINGS } from './shared/js/handwatch.js';
 
 const send = (msg) => chrome.runtime.sendMessage(msg).catch(() => {});
 
@@ -11,6 +12,8 @@ let settings = null;
 let detector = null;
 let lastHandSent = 0;
 let handVisible = false;
+const watch = new HandWatch();
+let warning = null;
 
 // Hidden pages get no animation frames, so poll with a timer instead
 // (about 60 times a second; the camera code skips repeated video frames).
@@ -21,10 +24,21 @@ const camera = new HandCamera(
   { schedule: (fn) => setTimeout(fn, 16) },
 );
 
-function onFrame({ t, landmarks, gesture, score }) {
-  const action = detector.update({ t, hand: palmCentre(landmarks), gesture, score });
-  if (action === 'next' || action === 'prev') playTurnSound(action, settings.volume);
+function onFrame({ t, landmarks, gesture, score, light, motion }) {
+  const hand = palmCentre(landmarks);
+  const action = detector.update({ t, hand, gesture, score });
+  if (action === 'next' || action === 'prev') {
+    playTurnSound(action, settings.volume);
+    watch.turned(t);
+  }
   if (action) send({ type: 'action', action });
+
+  // "Can't see your hand": only sent when it changes.
+  const now = watch.update({ t, hand, light, motion });
+  if (now !== warning) {
+    warning = now;
+    send({ type: 'warn', warning: now && WARNINGS[now] });
+  }
 
   // Hand preview for the Kindle page, about 12 times a second.
   if (landmarks || handVisible) {

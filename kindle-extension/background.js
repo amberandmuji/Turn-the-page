@@ -155,6 +155,7 @@ async function handle(msg, sender) {
       tellTab(state.tabId, { type: 'turn', dir: msg.action });
       return null;
     }
+    case 'warn':
     case 'hand': {
       const state = await getState();
       if (state.tabId) tellTab(state.tabId, msg);

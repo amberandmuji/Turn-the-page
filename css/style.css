@@ -178,22 +178,86 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .brand-mark rect:first-child { fill: var(--accent); }
 .brand-mark rect:last-child { fill: #7dd3fc; }
 .nav, .actions { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 1240px) {
+  .toolbar { grid-template-columns: auto 1fr auto; }
+  .nav { justify-self: center; }
+}
+@media (max-width: 1040px) {
+  .brand-text { display: none; }
+}
+@media (max-width: 900px) {
+  #open-btn { width: var(--control-h); padding: 0; }
+  #open-btn .btn-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .gesture-btn { min-width: 0; }
+}
 .nav { gap: 4px; }
 .nav:has(.page-label:empty) { visibility: hidden; } /* no book open yet */
 .nav .icon-btn { border-color: transparent; background: transparent; }
 .nav .icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); }
 .actions { justify-content: flex-end; }
-.page-label {
+.page-btn {
   min-width: 132px;
-  text-align: center;
+  padding: 0 8px;
+  border-color: transparent;
+  background: transparent;
+}
+.page-btn:hover:not(:disabled) .page-label,
+.page-btn:focus-visible .page-label { color: var(--text); }
+.page-label {
   font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 120ms;
+}
+.nav-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: var(--border);
+}
+.nav #toc-btn[aria-expanded="true"] { color: var(--accent-text); background: var(--accent-soft); }
+
+/* Zoom: out, the level (click for "fit"), in */
+.zoom { display: flex; align-items: center; }
+.zoom-label {
+  min-width: 52px;
+  padding: 0 6px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 550;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.zoom-label:hover:not(:disabled) { color: var(--text); }
+.zoom-label.zoomed { color: var(--accent-text); }
+.nav .fs-exit { display: none; }
+.nav #fullscreen-btn[aria-pressed="true"] .fs-enter { display: none; }
+.nav #fullscreen-btn[aria-pressed="true"] .fs-exit { display: block; }
 
-/* ---------- Settings panel ----------
-   A popover that floats over the book, so opening it never reflows the page. */
-.settings {
+/* Open PDF, with an arrow for recent books joined on when there are some */
+.split { display: flex; }
+.split #open-btn:has(+ .split-more:not([hidden])) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.split-more {
+  width: 28px;
+  padding: 0;
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  color: var(--muted);
+}
+.split-more[hidden] { display: none; }
+.split-more:hover:not(:disabled) { color: var(--text); }
+.split-more .icon { width: 16px; height: 16px; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.split-more[aria-expanded="true"] { color: var(--accent-text); background: var(--accent-soft); }
+.split-more[aria-expanded="true"] .icon { transform: rotate(180deg); }
+
+/* ---------- Panels: settings, contents, recent books ----------
+   Popovers that float over the book, so opening one never reflows the page.
+   Settings and recent books sit under the buttons on the right, contents on
+   the left. */
+.panel {
   position: fixed;
   inset: 60px 16px auto auto;
   width: 340px;
@@ -208,16 +272,145 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   box-shadow: var(--raised-shadow);
   accent-color: var(--accent-strong);
 }
-.settings:popover-open { animation: rise 200ms cubic-bezier(0.16, 1, 0.3, 1); }
-.settings::backdrop { background: transparent; }
-.settings-head {
+.panel:popover-open { animation: rise 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.panel::backdrop { background: transparent; }
+.panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 12px 4px 20px;
 }
-.settings h2 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
+.panel h2 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
 .icon-btn.ghost { border-color: transparent; background: transparent; }
+
+/* Contents: go to a page, then the PDF's own chapters */
+.panel.toc {
+  inset: 60px auto auto 16px;
+  width: 360px;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+/* Only while open: a closed popover must stay display: none. */
+.panel.toc:popover-open { display: flex; }
+.goto { display: grid; gap: 6px; padding: 8px 20px 16px; border-bottom: 1px solid var(--border); }
+.goto label { font-size: 13px; color: var(--muted); }
+.goto-row { display: flex; align-items: center; gap: 8px; }
+.goto input {
+  width: 88px;
+  height: var(--control-h);
+  padding: 0 10px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  caret-color: var(--accent-strong);
+  -moz-appearance: textfield;
+}
+.goto input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.goto input:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; border-color: transparent; }
+.goto input[aria-invalid="true"] { border-color: var(--live); }
+.goto-total { flex: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.goto .primary { padding: 0 16px; }
+
+.toc-tree { overflow: auto; padding: 8px 8px 12px; overscroll-behavior: contain; }
+.toc-tree:empty { display: none; }
+.toc-tree ol { list-style: none; margin: 0; padding: 0; }
+.toc-tree ol ol { padding-left: 18px; }
+.toc-tree ol[hidden] { display: none; }
+.toc-row { display: flex; align-items: flex-start; }
+.toc-toggle {
+  flex: none;
+  width: 24px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.toc-toggle:hover:not(:disabled) { background: transparent; color: var(--text); }
+.toc-toggle .icon { width: 14px; height: 14px; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.toc-toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+.toc-spacer { flex: none; width: 24px; }
+.toc-link {
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+}
+.toc-link:hover:not(:disabled) { background: var(--surface-2); }
+.toc-link:disabled { opacity: 0.5; }
+.toc-title { text-wrap: pretty; }
+.toc-page { flex: none; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.toc-link[aria-current="true"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 550; }
+.toc-link[aria-current="true"] .toc-page { color: inherit; }
+.toc-empty { margin: 0; padding: 16px 20px 20px; color: var(--muted); font-size: 14px; }
+
+/* Recent books, in the panel and on the start screen */
+.panel.recent { padding-bottom: 12px; }
+.book-list { list-style: none; margin: 0; padding: 4px 8px; }
+.book {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.book-open {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 0;
+  padding: 8px 44px 8px 12px;
+  border: 0;
+  background: transparent;
+  font-weight: 400;
+  text-align: left;
+}
+.book-open:hover:not(:disabled) { background: var(--surface-2); }
+.book-cover {
+  flex: none;
+  width: 36px;
+  aspect-ratio: 3 / 4;
+  border-radius: 2px;
+  object-fit: cover;
+  object-position: top;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 3px rgba(31, 35, 40, 0.12);
+}
+.book-text { display: grid; min-width: 0; gap: 1px; }
+.book-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.book-meta { font-size: 13px; color: var(--muted); }
+.book-meta .progress {
+  display: inline-block;
+  width: 40px;
+  height: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent-strong) var(--done), var(--border) var(--done));
+}
+.book-forget {
+  position: absolute;
+  right: 6px;
+  width: 30px;
+  min-height: 30px;
+  border-color: transparent;
+  background: transparent;
+  opacity: 0;
+}
+.book-forget .icon { width: 15px; height: 15px; }
+.book:hover .book-forget, .book-forget:focus-visible { opacity: 1; }
+@media (hover: none) { .book-forget { opacity: 1; } }
+.recent-note { margin: 4px 20px 0; font-size: 12.5px; color: var(--muted); }
 .icon-btn.ghost:hover { background: var(--surface-2); }
 
 .settings .group {
@@ -400,11 +593,22 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* safe: a zoomed page larger than the window scrolls instead of being cut off */
+  align-items: safe center;
+  justify-content: safe center;
   gap: 16px;
   padding: 16px;
+  overflow: hidden;
 }
+.pages.zoomed { overflow: auto; overscroll-behavior: contain; }
+.pages .page { flex: none; }
+.pages::-webkit-scrollbar { width: 12px; height: 12px; }
+.pages::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--border-strong) padding-box;
+}
+.pages::-webkit-scrollbar-corner { background: transparent; }
 .page {
   background: #fff;
   border-radius: 2px;
@@ -431,6 +635,70 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 }
 .empty p { color: var(--muted); margin: 0 0 24px; max-width: 400px; text-wrap: pretty; }
 .empty .hint { font-size: 13px; margin: 14px 0 0; }
+.empty { overflow: auto; }
+
+/* Continue reading: covers of recent books under the start screen */
+.shelf { margin-top: 40px; width: min(100%, 640px); }
+.shelf[hidden] { display: none; }
+.shelf h2 {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.shelf-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.shelf-book { position: relative; width: 112px; }
+.shelf-open {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 400;
+  white-space: normal;
+}
+.shelf-open:hover:not(:disabled) { background: transparent; }
+.shelf-open:active:not(:disabled) { transform: none; }
+.shelf-open .book-cover {
+  width: 96px;
+  box-shadow: var(--page-shadow);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.shelf-open:hover .book-cover { transform: translateY(-3px); box-shadow: var(--raised-shadow); }
+.shelf-open:focus-visible { outline: none; }
+.shelf-open:focus-visible .book-cover { outline: 2px solid var(--focus); outline-offset: 3px; }
+.shelf-open .book-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center;
+}
+.shelf-open .book-meta { font-size: 12px; margin-top: -4px; }
+.shelf .book-forget {
+  top: -8px;
+  right: 0;
+  width: 26px;
+  min-height: 26px;
+  border-radius: 50%;
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.15);
+}
+.shelf-book:hover .book-forget, .shelf .book-forget:focus-visible { opacity: 1; }
 
 /* The empty-state picture: a spread with a hand-swipe stroke across it */
 .empty-art { width: 200px; height: 120px; margin-bottom: 20px; overflow: visible; }
@@ -678,6 +946,50 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .gesture-hint:empty { display: none; }
 .gesture-hint.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* "Can't see your hand": a note by the camera window, in its dark style */
+.hand-warning {
+  position: fixed;
+  right: 16px;
+  bottom: 48px;
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: 260px;
+  padding: 10px 14px 10px 12px;
+  border-radius: 12px;
+  background: #16181b;
+  color: #f1f3f5;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.22), 0 10px 22px rgba(0, 0, 0, 0.26);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1), bottom 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hand-warning[hidden] { display: none; }
+.hand-warning.show { opacity: 1; transform: none; }
+.hand-warning .icon { width: 20px; height: 20px; margin-top: 1px; color: #fbbf24; }
+.hand-warning span { display: grid; gap: 2px; }
+.hand-warning strong { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.hand-warning small { font-size: 12.5px; line-height: 1.35; color: #b8bec6; }
+
+/* ---------- Full screen ----------
+   The toolbar floats over the book and slides away while you read; moving
+   the mouse brings it back. The book keeps the whole screen either way. */
+body.fullscreen .statusbar { display: none; }
+body.fullscreen .toolbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 4;
+  box-shadow: var(--raised-shadow);
+  transform: translateY(-100%);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms;
+}
+body.fullscreen.chrome .toolbar { transform: none; }
+body.fullscreen:not(.chrome) .toolbar { box-shadow: none; }
+body.fullscreen:not(.chrome) { cursor: none; }
+body.fullscreen .preview { bottom: 16px; }
+
 /* ---------- How-to dialog ---------- */
 .help {
   position: fixed;
@@ -765,16 +1077,19 @@ kbd {
   .brand-text { display: none; }
   .nav { grid-area: nav; justify-content: center; }
   .nav:has(.page-label:empty) { display: none; }
+  .nav { gap: 2px; }
+  .nav-sep { margin: 0 2px; }
+  .page-btn { min-width: 0; }
+  .zoom-label { min-width: 44px; }
   .statusbar:has(#status:empty) { display: none; }
   .actions { grid-area: actions; gap: 6px; }
-  #open-btn { width: var(--control-h); padding: 0; }
-  #open-btn .btn-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .gesture-btn { min-width: 0; }
-  .settings { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
-  .settings::backdrop { background: rgba(15, 17, 20, 0.35); }
+  .panel { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
+  .panel::backdrop { background: rgba(15, 17, 20, 0.35); }
+  .panel.toc { inset: auto 8px 8px 8px; width: auto; }
   .statusbar .privacy { display: none; }
   .preview-card { width: 168px; }
   .preview-text { font-size: 11.5px; }
+  .hand-warning { max-width: calc(100vw - 32px); }
   .help-card { padding: 20px; }
 }
 

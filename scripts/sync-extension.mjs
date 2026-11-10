@@ -17,6 +17,7 @@ export const SHARED = [
   'js/gestures.js',
   'js/camera.js',
   'js/feedback.js',
+  'js/handwatch.js',
   'vendor/mediapipe/vision_bundle.mjs',
   'vendor/mediapipe/wasm/vision_wasm_internal.js',
   'vendor/mediapipe/wasm/vision_wasm_internal.wasm',

@@ -15,12 +15,24 @@
       <span class="brand-text">Turn the page</span>
     </div>
     <div class="nav">
+      <button id="toc-btn" class="icon-btn" aria-label="Contents" aria-expanded="false" aria-controls="toc" popovertarget="toc" title="Contents and go to page (C)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1"/></svg></button>
+      <span class="nav-sep" aria-hidden="true"></span>
       <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <span id="page-label" class="page-label" aria-live="polite"></span>
+      <button id="page-btn" class="page-btn" popovertarget="toc" title="Go to a page"><span id="page-label" class="page-label" aria-live="polite"></span></button>
       <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      <span class="nav-sep" aria-hidden="true"></span>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" class="icon-btn" aria-label="Zoom out" title="Zoom out (−)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5"/></svg></button>
+        <button id="zoom-label" class="zoom-label" title="Fit the whole page in the window (0)">Fit</button>
+        <button id="zoom-in" class="icon-btn" aria-label="Zoom in" title="Zoom in (+)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5M11 8.5v5"/></svg></button>
+      </div>
+      <button id="fullscreen-btn" class="icon-btn" aria-label="Full screen" aria-pressed="false" title="Full screen (F)"><svg class="icon fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg><svg class="icon fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4"/></svg></button>
     </div>
     <div class="actions">
-      <button id="open-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="btn-text">Open PDF</span></button>
+      <div class="split">
+        <button id="open-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="btn-text">Open PDF</span></button>
+        <button id="recent-btn" class="split-more" aria-label="Recent books" aria-expanded="false" aria-controls="recent" popovertarget="recent" title="Recent books" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+      </div>
       <button id="gesture-btn" class="primary gesture-btn" title="Start or stop gestures (G)">Start gestures</button>
       <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings" popovertarget="settings" title="Settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       <button id="help-btn" class="icon-btn" aria-label="How it works" title="How it works"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/></svg></button>
@@ -28,8 +40,34 @@
     <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
   </header>
 
-  <section id="settings" class="settings" popover aria-labelledby="settings-title">
-    <header class="settings-head">
+  <section id="toc" class="panel toc" popover aria-labelledby="toc-title">
+    <header class="panel-head">
+      <h2 id="toc-title">Contents</h2>
+      <button class="icon-btn ghost" popovertarget="toc" popovertargetaction="hide" aria-label="Close contents"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <form id="goto-form" class="goto">
+      <label for="goto-input">Go to page</label>
+      <div class="goto-row">
+        <input id="goto-input" type="number" inputmode="numeric" min="1" autocomplete="off">
+        <span id="goto-total" class="goto-total"></span>
+        <button type="submit" class="primary">Go</button>
+      </div>
+    </form>
+    <nav id="toc-tree" class="toc-tree" aria-label="Chapters"></nav>
+    <p id="toc-empty" class="toc-empty" hidden>This PDF has no table of contents. You can still go to any page above.</p>
+  </section>
+
+  <section id="recent" class="panel recent" popover aria-labelledby="recent-title">
+    <header class="panel-head">
+      <h2 id="recent-title">Recent books</h2>
+      <button class="icon-btn ghost" popovertarget="recent" popovertargetaction="hide" aria-label="Close recent books"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <ul id="recent-list" class="book-list"></ul>
+    <p class="recent-note">Kept in this browser only. Turn this off in Settings.</p>
+  </section>
+
+  <section id="settings" class="panel settings" popover aria-labelledby="settings-title">
+    <header class="panel-head">
       <h2 id="settings-title">Settings</h2>
       <button class="icon-btn ghost" popovertarget="settings" popovertargetaction="hide" aria-label="Close settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </header>
@@ -68,6 +106,10 @@
         </div>
         <small class="note">Narrow windows always show one page.</small>
       </fieldset>
+      <label class="switch-row">
+        <span>Keep recent books<small>Saves a copy of each book in this browser, so it reopens in one click</small></span>
+        <input id="opt-recent" type="checkbox" role="switch" class="switch">
+      </label>
     </div>
 
     <div class="group" role="group" aria-labelledby="g-feedback">
@@ -108,6 +150,10 @@
       <p>Open a PDF from your computer, start gestures, then swipe in the air to turn the page.</p>
       <button id="empty-open-btn" class="primary large">Open a PDF</button>
       <p class="hint">Or drop a PDF anywhere on this page.</p>
+      <section id="shelf" class="shelf" aria-labelledby="shelf-title" hidden>
+        <h2 id="shelf-title">Continue reading</h2>
+        <ul id="shelf-list" class="shelf-list"></ul>
+      </section>
     </div>
   </main>
 
@@ -133,6 +179,11 @@
     </div>
   </aside>
 
+  <div id="hand-warning" class="hand-warning" role="status" aria-live="polite" hidden>
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+    <span><strong id="hand-warning-title"></strong><small id="hand-warning-tip"></small></span>
+  </div>
+
   <div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
     <div class="help-card" tabindex="-1">
       <h2 id="help-title">How to use Turn the page</h2>
@@ -142,9 +193,10 @@
         <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
         <li><strong>Swipe down</strong> to fold the camera window away, and <strong>swipe up</strong> to open it again. Hold your hand still for a moment first.</li>
         <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
-        <li><strong>Close any time.</strong> Your place in each book is saved in this browser, and the next time you open that PDF it opens where you left off.</li>
+        <li><strong>Close any time.</strong> Your place in each book is saved in this browser, and the next time you open that PDF it opens where you left off. Recent books reopen from the arrow next to Open PDF.</li>
       </ol>
-      <p class="tips"><strong>Tips:</strong> sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. Arrow keys (<kbd>←</kbd> <kbd>→</kbd>) work too.</p>
+      <p class="tips"><strong>Tips:</strong> sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. If the camera loses your hand, a note appears by the camera window saying why.</p>
+      <p class="tips"><strong>Reading:</strong> zoom with <kbd>+</kbd> and <kbd>−</kbd> (<kbd>0</kbd> fits the page again). When zoomed in, a swipe or arrow key scrolls down a screen first, then turns the page. <kbd>F</kbd> is full screen, <kbd>C</kbd> opens the contents. Arrow keys (<kbd>←</kbd> <kbd>→</kbd>) turn pages too.</p>
       <p class="privacy note">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
       <button id="help-close" class="primary">Got it</button>
     </div>

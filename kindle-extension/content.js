@@ -239,6 +239,25 @@
       .fold svg { width: 16px; height: 16px; transition: transform .32s var(--ease-out); }
       .dock.min .fold svg { transform: rotate(180deg); }
 
+      /* "Can't see your hand": a note just above the card (or its folded pill) */
+      .warn {
+        position: absolute; right: 0; bottom: calc(100% + 8px);
+        display: flex; align-items: flex-start; gap: 10px;
+        width: max-content; max-width: 260px; padding: 10px 14px 10px 12px;
+        border-radius: 12px; background: #16181b; color: #f1f3f5;
+        opacity: 0; transform: translateY(6px); visibility: hidden;
+        transition: opacity .18s ease, transform .3s var(--ease-out), bottom .32s var(--ease-out), visibility 0s .18s;
+      }
+      .warn.show {
+        opacity: 1; transform: none; visibility: visible;
+        transition: opacity .18s ease, transform .3s var(--ease-out), bottom .32s var(--ease-out), visibility 0s;
+      }
+      .dock.min .warn { bottom: calc(var(--bar) + 8px); }
+      .warn svg { width: 20px; height: 20px; flex: none; margin-top: 1px; color: #fbbf24; }
+      .warn span { display: grid; gap: 2px; }
+      .warn strong { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+      .warn small { font-size: 12.5px; line-height: 1.35; color: #b8bec6; }
+
       /* Page-turn glow on the side the page turns from */
       .edge {
         position: fixed; top: 0; bottom: 0; width: 72px; z-index: 2147483646;
@@ -263,6 +282,10 @@
     <div class="edge left"></div>
     <div class="edge right"></div>
     <div class="dock">
+      <div class="warn" role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        <span><strong></strong><small></small></span>
+      </div>
       <div class="card">
         <div class="view">
           <canvas width="376" height="282"></canvas>
@@ -288,6 +311,7 @@
   const dot = root.querySelector('.dot');
   const text = root.querySelector('.text');
   const fold = root.querySelector('.fold');
+  const warn = root.querySelector('.warn');
   const edges = { next: root.querySelector('.edge.right'), prev: root.querySelector('.edge.left') };
 
   let settings = { flash: true, preview: true, swap: false };
@@ -352,6 +376,7 @@
     mode = state.mode;
     clearTimeout(hideTimer);
     dot.classList.remove('on', 'starting', 'hand', 'fist');
+    if (state.mode !== 'on') showWarning(null);
     if (mode !== 'off') dot.classList.add(mode);
     if (mode === 'on') {
       text.textContent = settings.swap ? 'Swipe → for next page' : 'Swipe ← for next page';
@@ -372,6 +397,17 @@
         dock.classList.remove('show');
         chrome.storage.local.get('cardMinimised').then(({ cardMinimised }) => setMinimised(!!cardMinimised, false)).catch(() => {});
       }, 5000);
+    }
+  }
+
+  // warning: { title, tip } or null.
+  function showWarning(warning) {
+    if (warning && mode === 'on') {
+      warn.querySelector('strong').textContent = warning.title;
+      warn.querySelector('small').textContent = warning.tip;
+      warn.classList.add('show');
+    } else {
+      warn.classList.remove('show');
     }
   }
 
@@ -400,6 +436,7 @@
       settings = msg.settings;
       view.hidden = !settings.preview || mode === 'off';
     }
+    if (msg.type === 'warn') showWarning(msg.warning);
     if (msg.type === 'hand' && mode === 'on') {
       if (settings.preview && !minimised) drawHand(msg.points);
       dot.classList.toggle('hand', !!msg.points);

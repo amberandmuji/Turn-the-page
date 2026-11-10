@@ -2,12 +2,15 @@
 // the model and its runtime are served from this site, and no frame leaves
 // the device.
 import { FilesetResolver, GestureRecognizer, DrawingUtils } from '../vendor/mediapipe/vision_bundle.mjs';
+import { frameStats } from './handwatch.js';
 
 const WASM_DIR = new URL('../vendor/mediapipe/wasm', import.meta.url).href;
 const MODEL = new URL('../models/gesture_recognizer.task', import.meta.url).href;
 
 export class HandCamera {
-  // onFrame({ t, landmarks, gesture, score }) is called for every processed frame.
+  // onFrame({ t, landmarks, gesture, score, light, motion }) is called for
+  // every processed frame. light and motion (0..1) come from a tiny copy of
+  // the picture, for the "can't see your hand" warning.
   // options.schedule replaces requestAnimationFrame, for pages that are never
   // shown on screen (like the Kindle extension's hidden camera page), where
   // animation frames don't fire.
@@ -21,6 +24,23 @@ export class HandCamera {
     this.running = false;
     this.lastVideoTime = -1;
     this.lastHandAt = 0;
+    this.thumb = null;
+    this.prevLuma = null;
+  }
+
+  // Brightness and movement, measured on a 32 by 24 copy of the frame.
+  measure() {
+    try {
+      if (!this.thumb) {
+        this.thumb = new OffscreenCanvas(32, 24).getContext('2d', { willReadFrequently: true });
+      }
+      this.thumb.drawImage(this.video, 0, 0, 32, 24);
+      const stats = frameStats(this.thumb.getImageData(0, 0, 32, 24).data, this.prevLuma);
+      this.prevLuma = stats.luma;
+      return stats;
+    } catch {
+      return { light: 1, motion: 0 };
+    }
   }
 
   async loadModel() {
@@ -50,6 +70,7 @@ export class HandCamera {
     this.overlay.height = this.video.videoHeight;
     this.running = true;
     this.lastVideoTime = -1;
+    this.prevLuma = null;
     this.loop();
   }
 
@@ -77,11 +98,14 @@ export class HandCamera {
       const top = result.gestures?.[0]?.[0];
       if (landmarks) this.lastHandAt = now;
       this.draw(landmarks);
+      const { light, motion } = this.measure();
       this.onFrame({
         t: now,
         landmarks,
         gesture: top?.categoryName || 'None',
         score: top?.score || 0,
+        light,
+        motion,
       });
     }
     this.schedule(() => this.loop());
