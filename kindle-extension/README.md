@@ -2,12 +2,13 @@
 
 A Chrome extension that turns pages in Kindle Cloud Reader (read.amazon.com) when you swipe your hand in front of the webcam. It uses the same hand tracking and swipe detection as the PDF reader, and everything runs on your computer.
 
-## Install (while it's in testing)
+## Install
 
-1. Download the code: https://github.com/amberandmuji/Turn-the-page/archive/refs/heads/dev.zip and unzip it.
-2. In Chrome, go to `chrome://extensions` and turn on **Developer mode** (top right).
-3. Click **Load unpacked** and choose the `kindle-extension` folder inside the unzipped folder.
-4. Click the puzzle-piece icon in Chrome's toolbar and pin **Turn the page for Kindle**.
+1. Download the code: https://github.com/amberandmuji/Turn-the-page/archive/refs/heads/main.zip
+2. Unzip it and move the folder somewhere permanent, such as Documents. Chrome runs the extension from this folder, so don't delete or move it later.
+3. In Chrome, go to `chrome://extensions` and turn on **Developer mode** (top right).
+4. Click **Load unpacked** and choose the `kindle-extension` folder inside the unzipped folder.
+5. Click the puzzle-piece icon in Chrome's toolbar and pin **Turn the page for Kindle**.
 
 ## Update
 
