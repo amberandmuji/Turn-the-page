@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><body><script type="module">
+import { FilesetResolver, GestureRecognizer } from './vendor/mediapipe/vision_bundle.mjs';
+const fileset = await FilesetResolver.forVisionTasks(new URL('./vendor/mediapipe/wasm', location.href).href);
+const rec = await GestureRecognizer.createFromOptions(fileset, { baseOptions: { modelAssetPath: './models/gesture_recognizer.task', delegate: 'CPU' }, runningMode: 'VIDEO', numHands: 1 });
+const cv = document.createElement('canvas'); cv.width = 640; cv.height = 480; const g = cv.getContext('2d');
+window.run = async (dir, n) => {
+  const out = [];
+  for (let i = 1; i <= n; i++) {
+    const img = new Image(); img.src = `${dir}/f${String(i).padStart(4, '0')}.png`; await img.decode();
+    // video area of the card is the top 444x328; un-mirror it back to the raw camera picture
+    g.setTransform(-1, 0, 0, 1, 640, 0); g.drawImage(img, 0, 0, 444, 328, 0, 0, 640, 480);
+    const r = rec.recognizeForVideo(g.getImageData(0, 0, 640, 480), (window.ts = (window.ts || 0) + 33.333));
+    const lm = r.landmarks?.[0] || null; const top = r.gestures?.[0]?.[0];
+    out.push(lm ? { lm: lm.map((p) => [+p.x.toFixed(4), +p.y.toFixed(4)]), g: top?.categoryName, s: +(top?.score || 0).toFixed(2) } : null);
+  }
+  return out;
+};
+window.ready = true;
+</script>
