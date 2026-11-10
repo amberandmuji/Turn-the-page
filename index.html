@@ -10,47 +10,63 @@
 </head>
 <body>
   <header class="toolbar">
-    <div class="brand">Turn the page</div>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="5" width="11" height="22" rx="2"/><rect x="17" y="5" width="11" height="22" rx="2"/></svg>
+      <span class="brand-text">Turn the page</span>
+    </div>
     <div class="nav">
-      <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)">‹</button>
+      <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
       <span id="page-label" class="page-label" aria-live="polite"></span>
-      <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)">›</button>
+      <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
     <div class="actions">
-      <button id="open-btn">Open PDF</button>
-      <button id="gesture-btn" class="primary" title="Start or stop gestures (G)">Start gestures</button>
-      <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings">⚙</button>
-      <button id="help-btn" class="icon-btn" aria-label="How it works">?</button>
+      <button id="open-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="btn-text">Open PDF</span></button>
+      <button id="gesture-btn" class="primary gesture-btn" title="Start or stop gestures (G)">Start gestures</button>
+      <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings" title="Settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+      <button id="help-btn" class="icon-btn" aria-label="How it works" title="How it works"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/></svg></button>
     </div>
     <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
   </header>
 
   <section id="settings" class="settings" hidden aria-label="Settings">
-    <label class="row">
-      <span>Swipe sensitivity <strong id="sensitivity-value">5</strong></span>
-      <input id="sensitivity" type="range" min="1" max="10" step="1">
-      <small>Higher means a shorter swipe is enough.</small>
-    </label>
-    <label class="check"><input id="opt-spread" type="checkbox"> Two-page spread</label>
-    <label class="check"><input id="opt-swap" type="checkbox"> Swap swipe direction</label>
-    <label class="check"><input id="opt-sound" type="checkbox"> Sound on page turn</label>
-    <label class="check"><input id="opt-flash" type="checkbox"> Flash on page turn</label>
-    <label class="check"><input id="opt-preview" type="checkbox"> Show camera preview</label>
+    <fieldset>
+      <legend>Gestures</legend>
+      <label class="range">
+        <span class="range-head">Swipe sensitivity <output id="sensitivity-value" for="sensitivity">5</output></span>
+        <input id="sensitivity" type="range" min="1" max="10" step="1" aria-describedby="sensitivity-note">
+        <small id="sensitivity-note">Higher means a shorter swipe is enough.</small>
+      </label>
+      <label class="check"><input id="opt-swap" type="checkbox"> Swap swipe direction</label>
+      <label class="check"><input id="opt-preview" type="checkbox"> Show camera preview</label>
+    </fieldset>
+    <fieldset>
+      <legend>Reading</legend>
+      <label class="check"><input id="opt-spread" type="checkbox"> Two-page spread</label>
+      <label class="check"><input id="opt-sound" type="checkbox"> Sound on page turn</label>
+      <label class="check"><input id="opt-flash" type="checkbox"> Flash on page turn</label>
+    </fieldset>
   </section>
 
   <main id="stage" class="stage">
     <div id="pages" class="pages"></div>
     <div id="empty" class="empty">
+      <svg class="empty-art" viewBox="0 0 200 120" aria-hidden="true">
+        <rect class="sheet" x="40" y="22" width="58" height="80" rx="3"/>
+        <rect class="sheet" x="102" y="22" width="58" height="80" rx="3"/>
+        <path class="lines" d="M50 40h38M50 50h38M50 60h30M50 70h38M50 80h24M112 40h38M112 50h38M112 60h34M112 70h38M112 80h20"/>
+        <path class="swipe" d="M172 10C140 2 76 2 32 12"/>
+        <path class="swipe-head" d="M40 4l-9 8 11 5"/>
+      </svg>
       <h1>Read without touching the keyboard</h1>
       <p>Open a PDF from your computer, start gestures, then swipe in the air to turn the page.</p>
-      <button id="empty-open-btn" class="primary">Open a PDF</button>
+      <button id="empty-open-btn" class="primary large">Open a PDF</button>
       <p class="hint">Or drop a PDF anywhere on this page.</p>
     </div>
   </main>
 
   <footer class="statusbar">
     <span id="status" aria-live="polite"></span>
-    <span class="privacy">Your camera and books never leave this device.</span>
+    <span class="privacy"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Your camera and books never leave this device.</span>
   </footer>
 
   <aside id="preview" class="preview" hidden aria-label="Camera preview">
@@ -61,7 +77,7 @@
   </aside>
 
   <div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
-    <div class="help-card">
+    <div class="help-card" tabindex="-1">
       <h2 id="help-title">How to use Turn the page</h2>
       <ol>
         <li><strong>Open a PDF</strong> from your computer.</li>
@@ -69,8 +85,8 @@
         <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
         <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
       </ol>
-      <p>Tips: sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. Arrow keys work too.</p>
-      <p class="privacy">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
+      <p class="tips"><strong>Tips:</strong> sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. Arrow keys (<kbd>←</kbd> <kbd>→</kbd>) work too.</p>
+      <p class="privacy note">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
       <button id="help-close" class="primary">Got it</button>
     </div>
   </div>

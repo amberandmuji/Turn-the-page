@@ -54,6 +54,9 @@ const wantSpread = () => settings.spread && els.stage.clientWidth >= SPREAD_MIN_
 
 const reader = new Reader(els.pages, (label) => {
   els.pageLabel.textContent = label;
+  // Grey out the arrows at the first and last page.
+  els.prevBtn.disabled = reader.page <= 1;
+  els.nextBtn.disabled = reader.page + reader.step > reader.pageCount;
 });
 const detector = new GestureDetector({ sensitivity: settings.sensitivity, swapDirection: settings.swap });
 const camera = new HandCamera(els.video, els.overlay, onFrame);
@@ -95,12 +98,25 @@ els.settingsBtn.addEventListener('click', () => {
 });
 
 // ---------- Help ----------
+let helpReturnFocus = null;
 function showHelp(show) {
   els.help.hidden = !show;
-  if (!show) save('seen-help', true);
+  if (show) {
+    helpReturnFocus = document.activeElement;
+    els.helpClose.focus();
+  } else {
+    save('seen-help', true);
+    helpReturnFocus?.focus?.();
+  }
 }
 els.helpBtn.addEventListener('click', () => showHelp(true));
 els.helpClose.addEventListener('click', () => showHelp(false));
+// Close with Escape or a click outside the card.
+els.help.addEventListener('click', (e) => { if (e.target === els.help) showHelp(false); });
+els.help.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') showHelp(false);
+  if (e.key === 'Tab') { e.preventDefault(); els.helpClose.focus(); } // keep focus inside
+});
 if (!load('seen-help', false)) showHelp(true);
 
 // ---------- Opening files ----------
@@ -162,6 +178,7 @@ els.nextBtn.addEventListener('click', () => turn('next'));
 
 document.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement) return;
+  if (!els.help.hidden) return; // the how-to card handles its own keys
   if (['ArrowRight', 'PageDown', ' '].includes(e.key)) {
     e.preventDefault();
     turn('next');
