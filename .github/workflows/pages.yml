@@ -1,0 +1,56 @@
+# Publishes two copies of the site to GitHub Pages:
+#   main -> https://amberandmuji.github.io/Turn-the-page/          (the main site)
+#   dev  -> https://amberandmuji.github.io/Turn-the-page/preview/  (test new versions here first)
+name: Publish site
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Get the main site
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+
+      - name: Get the preview (dev branch)
+        id: dev
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: dev
+          path: preview-src
+
+      - name: Put the preview under /preview/ and label it
+        if: steps.dev.outcome == 'success'
+        run: |
+          mkdir -p site/preview
+          cp -r preview-src/index.html preview-src/css preview-src/js preview-src/vendor preview-src/models site/preview/
+          sed -i 's#<title>Turn the page</title>#<title>PREVIEW · Turn the page</title>#; s#<div class="brand">Turn the page</div>#<div class="brand">Turn the page <span style="color:\#d97706">· preview</span></div>#' site/preview/index.html
+
+      - name: Leave out files the site doesn't need
+        run: rm -rf site/.git site/.github site/tests
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -71,3 +71,7 @@ npm test           # runs the gesture detector tests
 | `js/feedback.js` | Page-turn sound and flash |
 | `vendor/` | PDF.js 4.4.168 (Apache-2.0) and MediaPipe Tasks Vision 0.10.14 (Apache-2.0) |
 | `models/gesture_recognizer.task` | MediaPipe's gesture recogniser model (Apache-2.0) |
+
+## Testing new versions
+
+New versions go to the `dev` branch first and show up at https://amberandmuji.github.io/Turn-the-page/preview/ (marked "preview"). Once they work, `dev` is merged into `main`, which updates the main site at https://amberandmuji.github.io/Turn-the-page/. Both are published by `.github/workflows/pages.yml`, so the repo's Pages source must be set to "GitHub Actions".
