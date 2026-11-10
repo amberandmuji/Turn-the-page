@@ -1,9 +1,9 @@
 {
-  "version": "48a98ea",
+  "version": "2405ae6",
   "files": {
     "README.md": "62fe5ca63f3d928c3d56e0bb7941ac6cb18d9fc9a4f45c21301509a1afabcf69",
     "background.js": "02c92c33ea44579ae645eb5327054c73e895759f008dde019cd7b2806e946412",
-    "content.js": "9bc06f3c578b792552000999c4001efbfbe9cea8378f39c3ff4f158187c40611",
+    "content.js": "06336447820d2d8d4abf5ed786d2d6261625e7e2ba94b61b7b4c88c54257c1db",
     "icons/icon128.png": "7377a719c2a9f861e0c33ebf0b51071ab324a1cbeef1e9ff20b85289d0c69072",
     "icons/icon16.png": "8d2f992cac20753040f06443ebd178edb653c9727e2bf47d66d5330cab0b8b38",
     "icons/icon32.png": "49c801c93320448903c160d5e5f6013be42de458655ec62335754198d321b436",
@@ -11,7 +11,7 @@
     "manifest.json": "d0ba65944446d812fe579588f15020262b152cc15b5da17028f7901bc75c37d1",
     "offscreen.html": "2eaa582878b416ff5a3cec0c188bf216cbd42a523f99f0b7de6489bebbfebbe3",
     "offscreen.js": "4ec05c1ba223bc6e13d8b979064476ab446f16bada6ff2b1703ff52c994e2d50",
-    "popup.html": "d344b77cb6e001a67387bed5b47144639194319abd8b24286346769b9a8e8f0a",
+    "popup.html": "3aa6a46420fa58d65196234cae5fd76a0d569916c7a4f578888948241e984aee",
     "popup.js": "5901a5b983e14d5464d582e43902d038c0a831329a6d476375c1ed3d3eac0363",
     "settings.js": "dc2400a9298deb0a9bb22dc698b4280b0c8a7d1c27a6773bfecc5522ebdd7ef4",
     "setup.html": "e9d8ee1aed8c4fd33905922f39cd5787bf91f7e2d9761264f15b0635438a67be",
@@ -24,7 +24,7 @@
     "shared/vendor/mediapipe/vision_bundle.mjs": "e77f281f9619150d937023c355bae170e9120e3b9e43f1e23a2a7bee07197669",
     "shared/vendor/mediapipe/wasm/vision_wasm_internal.js": "9440cf0cc0cea21800e31581ec32aeedcc5fbf9df4509796bbc7d3f99e52ab9c",
     "shared/vendor/mediapipe/wasm/vision_wasm_internal.wasm": "f82a8e6c05e08a44cc9f9e7ec5f845935bcbb1b1500ebe8c2f4812fb4e2917dc",
-    "ui.css": "c76d97405de189ead3d114930928fb761b986d9524458fe2f48f9ca6ea17daea",
+    "ui.css": "f03c70d7528a77626abbe963d2592752f53a2bb083c556a5d5296a1a3b5ed8cc",
     "update.html": "862c6b9494ad46636ed10d2a2d26f2c43737d00c8b9fa8da4570747088221cc4",
     "update.js": "4892bc71c8640605a8d9d8bb794e1767a92959e0f58d9703e6ba5886e51ea0e8",
     "updates.js": "de98c467a8a309e08595879eb8fda4730eff8c3ffc1296a1c18f684f6caba817"

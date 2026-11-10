@@ -239,6 +239,28 @@
       .fold svg { width: 16px; height: 16px; transition: transform .32s var(--ease-out); }
       .dock.min .fold svg { transform: rotate(180deg); }
 
+      /* Big gesture cue in the middle of the page, as in the PDF reader */
+      .cue {
+        --p: 0;
+        position: fixed; left: 50%; top: 50%; z-index: 2147483647;
+        display: grid; justify-items: center; gap: 10px; padding: 18px 22px 16px; min-width: 168px;
+        border-radius: 20px; background: rgba(22,24,27,.82); color: #fff; pointer-events: none;
+        font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.01em;
+        box-shadow: 0 4px 10px rgba(0,0,0,.2), 0 18px 40px rgba(0,0,0,.25);
+        opacity: 0; transform: translate(-50%, -50%) scale(.92); visibility: hidden;
+        transition: opacity .16s ease, transform .26s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s .26s;
+      }
+      .cue.show { opacity: 1; transform: translate(-50%, -50%); visibility: visible; transition-delay: 0s; }
+      .cue-badge { position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.1); }
+      .cue.holding .cue-badge::after {
+        content: ""; position: absolute; inset: -5px; border-radius: 50%;
+        background: conic-gradient(#f87171 calc(var(--p) * 360deg), rgba(255,255,255,.15) 0);
+        -webkit-mask: radial-gradient(circle, transparent 37px, #000 38px);
+                mask: radial-gradient(circle, transparent 37px, #000 38px);
+      }
+      .cue svg { width: 44px; height: 44px; fill: none; stroke: #7dd3fc; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .cue span:last-child { white-space: nowrap; }
+
       /* Which way the last gesture was read, as in the PDF reader */
       .hint {
         position: absolute; left: 50%; bottom: 10px; padding: 3px 10px; border-radius: 999px;
@@ -288,6 +310,7 @@
         .dot.turn::before { animation: none; }
       }
     </style>
+    <div class="cue" aria-hidden="true"><span class="cue-badge"><svg viewBox="0 0 24 24"><path d=""/></svg></span><span></span></div>
     <div class="edge left"></div>
     <div class="edge right"></div>
     <div class="dock">
@@ -323,6 +346,7 @@
   const fold = root.querySelector('.fold');
   const warn = root.querySelector('.warn');
   const hint = root.querySelector('.hint');
+  const cue = root.querySelector('.cue');
   let hintTimer = null;
   const edges = { next: root.querySelector('.edge.right'), prev: root.querySelector('.edge.left') };
 
@@ -389,6 +413,8 @@
     clearTimeout(hideTimer);
     dot.classList.remove('on', 'starting', 'hand', 'fist');
     if (state.mode !== 'on') showWarning(null);
+    if (state.mode === 'off' && state.reason === 'fist') showCue('pause');
+    else if (cueKind === 'hold') hideCue();
     if (mode !== 'off') dot.classList.add(mode);
     if (mode === 'on') {
       text.textContent = settings.swap ? 'Swipe → for next page' : 'Swipe ← for next page';
@@ -423,8 +449,49 @@
     }
   }
 
+  // The arrow points the way the hand moved, which depends on the setting.
+  function hintText(dir) {
+    const leftward = (dir === 'next') !== !!settings.swap;
+    const label = dir === 'next' ? 'Next' : 'Previous';
+    return leftward ? `← ${label}` : `${label} →`;
+  }
+
+  // Big, brief sign in the middle of the page, readable from across the room.
+  const CUES = {
+    left: { icon: 'M19 12H5M11 6l-6 6 6 6' },
+    right: { icon: 'M5 12h14M13 6l6 6-6 6' },
+    still: { icon: 'M6 6l12 12M18 6L6 18', text: 'Page didn\'t turn' },
+    fold: { icon: 'M6 9l6 6 6-6', text: 'Camera folded' },
+    unfold: { icon: 'M6 15l6-6 6 6', text: 'Camera shown' },
+    hold: { icon: 'M9.5 7v10M14.5 7v10', text: 'Keep holding to pause' },
+    pause: { icon: 'M9.5 7v10M14.5 7v10', text: 'Paused. Camera off' },
+  };
+  let cueTimer = null;
+  let cueKind = null;
+  function showCue(kind, progress = 0) {
+    let c = CUES[kind];
+    if (kind === 'next' || kind === 'prev') {
+      const leftward = (kind === 'next') !== !!settings.swap;
+      c = { ...CUES[leftward ? 'left' : 'right'], text: kind === 'next' ? 'Next page' : 'Previous page' };
+    }
+    if (!c) return;
+    cueKind = kind;
+    cue.querySelector('path').setAttribute('d', c.icon);
+    cue.lastElementChild.textContent = c.text;
+    cue.style.setProperty('--p', progress);
+    cue.classList.toggle('holding', kind === 'hold');
+    cue.classList.add('show');
+    clearTimeout(cueTimer);
+    if (kind !== 'hold') cueTimer = setTimeout(hideCue, kind === 'pause' ? 1800 : 750);
+  }
+  function hideCue() {
+    cueKind = null;
+    clearTimeout(cueTimer);
+    cue.classList.remove('show');
+  }
+
   function showHint(dir) {
-    hint.textContent = dir === 'next' ? '← Next' : 'Previous →';
+    hint.textContent = hintText(dir);
     hint.classList.add('show');
     clearTimeout(hintTimer);
     hintTimer = setTimeout(() => hint.classList.remove('show'), 900);
@@ -447,11 +514,17 @@
     if (msg.type === 'turn') {
       flash(msg.dir);
       if (!msg.test) showHint(msg.dir);
-      turn(msg.dir).then(reply);
+      turn(msg.dir).then((result) => {
+        if (!msg.test) showCue(result.ok ? msg.dir : 'still');
+        reply(result);
+      });
       return true;
     }
     if (msg.type === 'state') showState(msg.state);
-    if (msg.type === 'fold' && mode === 'on') setMinimised(msg.folded);
+    if (msg.type === 'fold' && mode === 'on') {
+      setMinimised(msg.folded);
+      showCue(msg.folded ? 'fold' : 'unfold');
+    }
     if (msg.type === 'settings') {
       settings = msg.settings;
       view.hidden = !settings.preview || mode === 'off';
@@ -461,6 +534,8 @@
       if (settings.preview && !minimised) drawHand(msg.points);
       dot.classList.toggle('hand', !!msg.points);
       dot.style.setProperty('--p', msg.fist || 0);
+      if (msg.fist > 0.2) showCue('hold', msg.fist);
+      else if (cueKind === 'hold') hideCue();
       dot.classList.toggle('fist', msg.fist > 0);
     }
     return false;

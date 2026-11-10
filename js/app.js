@@ -67,6 +67,9 @@ const els = {
   shelfList: $('shelf-list'),
   keepRecent: $('opt-recent'),
   pageFlip: $('opt-flip'),
+  helpSwipe: $('help-swipe'),
+  cue: $('cue'),
+  gotoError: $('goto-error'),
   handWarning: $('hand-warning'),
   handWarningTitle: $('hand-warning-title'),
   handWarningTip: $('hand-warning-tip'),
@@ -128,6 +131,9 @@ function applySettings() {
   detector.setSwapDirection(settings.swap);
   els.preview.hidden = !(settings.preview && gestureState === 'on');
   els.previewText.textContent = settings.swap ? 'Swipe → for next page' : 'Swipe ← for next page';
+  els.helpSwipe.innerHTML = settings.swap
+    ? '<strong>Swipe left to right</strong> in the air for the next page, <strong>right to left</strong> for the previous one.'
+    : '<strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.';
   detector.setSensitivity(settings.sensitivity);
 }
 
@@ -172,7 +178,9 @@ function showHelp(show) {
   els.help.hidden = !show;
   if (show) {
     helpReturnFocus = document.activeElement;
-    els.helpClose.focus();
+    // Focus "Got it" without scrolling the card to it: start at the top.
+    els.helpClose.focus({ preventScroll: true });
+    els.help.querySelector('.help-card').scrollTop = 0;
   } else {
     save('seen-help', true);
     helpReturnFocus?.focus?.();
@@ -240,7 +248,8 @@ function showResume() {
   els.resumeText.textContent = `Picked up where you left off, on page ${reader.page}.`;
   els.resume.hidden = false;
   requestAnimationFrame(() => els.resume.classList.add('show'));
-  resumeTimer = setTimeout(hideResume, 8000);
+  // Stays until the first page turn, or 20 seconds, so it can be read from a distance.
+  resumeTimer = setTimeout(hideResume, 20000);
 }
 els.resumeRestart.addEventListener('click', async () => {
   hideResume();
@@ -267,8 +276,14 @@ els.stage.addEventListener('drop', (e) => {
 // ---------- Turning pages ----------
 // Shows which way a gesture was read, so a wrong turn is easy to spot.
 let hintTimer;
+// The arrow points the way the hand moved, which depends on the setting.
+function hintText(direction) {
+  const leftward = (direction === 'next') !== settings.swap;
+  const label = direction === 'next' ? 'Next' : 'Previous';
+  return leftward ? `← ${label}` : `${label} →`;
+}
 function showGestureHint(direction) {
-  els.gestureHint.textContent = direction === 'next' ? '← Next' : 'Previous →';
+  els.gestureHint.textContent = hintText(direction);
   els.gestureHint.classList.add('show');
   clearTimeout(hintTimer);
   hintTimer = setTimeout(() => els.gestureHint.classList.remove('show'), 900);
@@ -278,17 +293,18 @@ async function turn(direction) {
   // Zoomed in, read down the page first, then turn.
   if (reader.zoom > 1 && reader.scroll(direction)) {
     if (!els.resume.hidden) hideResume();
-    return;
+    return 'scrolled';
   }
   const go = () => (direction === 'next' ? reader.next() : reader.prev());
   const animate = settings.pageFlip && reader.zoom === 1 && !reduceMotion.matches;
   const moved = animate
     ? await flipTurn({ stage: els.stage, pages: els.pages, direction, render: go })
     : await go();
-  if (!moved) return;
+  if (!moved) return false;
   if (!els.resume.hidden) hideResume();
   if (settings.sound) playTurnSound(direction, settings.volume);
   if (settings.flash) flashEdge(els.stage, direction);
+  return true;
 }
 
 els.prevBtn.addEventListener('click', () => turn('prev'));
@@ -305,6 +321,8 @@ document.addEventListener('keydown', (e) => {
   if (reader.doc && e.key === '0') { setZoom(1); return; }
   if (reader.doc && (e.key === 'f' || e.key === 'F')) { toggleFullscreen(); return; }
   if (reader.doc && (e.key === 'c' || e.key === 'C')) { setTocOpen(!tocOpen); return; }
+  // Space and Enter on a focused button press the button, as usual.
+  if ([' ', 'Enter'].includes(e.key) && e.target.closest?.('button, a, select, textarea, [role="switch"]')) return;
   if (['ArrowRight', 'PageDown', ' '].includes(e.key)) {
     e.preventDefault();
     turn('next');
@@ -368,7 +386,10 @@ function stopGestures(reason) {
   setGestureState('off');
   setStatus(reason === 'fist'
     ? 'Paused, and the camera is off. Click Start gestures or press G to resume.'
-    : '');
+    : reason === 'hidden'
+      ? 'Gestures stopped while you were on another tab. Press G to start again.'
+      : '');
+  if (reason === 'fist') showCue('pause');
 }
 
 function toggleGestures() {
@@ -390,13 +411,64 @@ function onFrame({ t, landmarks, gesture, score, light, motion }) {
   els.liveDot.classList.toggle('fist', fist > 0);
   els.liveDot.classList.toggle('hand', !!landmarks);
   if (action === 'pause') stopGestures('fist');
-  else if (action === 'down') setFolded(true);
-  else if (action === 'up') setFolded(false);
+  else if (action === 'down') { setFolded(true); showCue('fold'); }
+  else if (action === 'up') { setFolded(false); showCue('unfold'); }
   else if (action) {
     showGestureHint(action);
     tickDot();
-    turn(action);
+    turn(action).then((moved) => {
+      if (moved === 'scrolled') showCue(action === 'next' ? 'down' : 'up');
+      else if (moved) showCue(action);
+      else if (reader.doc) showCue(action === 'next' ? 'last' : 'first');
+    });
+  } else if (fist > 0.2) {
+    showCue('hold', fist);
+  } else if (cueKind === 'hold') {
+    hideCue();
   }
+}
+
+// ---------- Big gesture cue ----------
+// From across the room the camera card is too small to read, so each
+// gesture also shows a large, brief sign in the middle of the book: which
+// way it turned, that it's the last page, that the camera folded, or how
+// long to keep holding a fist.
+const CUES = {
+  left: { icon: 'M19 12H5M11 6l-6 6 6 6' },
+  right: { icon: 'M5 12h14M13 6l6 6-6 6' },
+  last: { icon: 'M4 12h11M10 7l5 5-5 5M20 5v14', text: 'Last page' },
+  first: { icon: 'M20 12H9M14 7l-5 5 5 5M4 5v14', text: 'First page' },
+  down: { icon: 'M12 5v14M6 13l6 6 6-6', text: 'Further down' },
+  up: { icon: 'M12 19V5M6 11l6-6 6 6', text: 'Further up' },
+  fold: { icon: 'M6 9l6 6 6-6', text: 'Camera folded' },
+  unfold: { icon: 'M6 15l6-6 6 6', text: 'Camera shown' },
+  hold: { icon: 'M9.5 7v10M14.5 7v10', text: 'Keep holding to pause' },
+  pause: { icon: 'M9.5 7v10M14.5 7v10', text: 'Paused. Camera off' },
+};
+let cueTimer;
+let cueKind = null;
+function showCue(kind, progress = 0) {
+  let cue = CUES[kind];
+  if (kind === 'next' || kind === 'prev') {
+    const leftward = (kind === 'next') !== settings.swap;
+    cue = { ...CUES[leftward ? 'left' : 'right'], text: kind === 'next' ? 'Next page' : 'Previous page' };
+  }
+  if (!cue) return;
+  cueKind = kind;
+  els.cue.querySelector('path').setAttribute('d', cue.icon);
+  els.cue.querySelector('.cue-text').textContent = cue.text;
+  els.cue.style.setProperty('--p', progress);
+  els.cue.classList.toggle('holding', kind === 'hold');
+  els.cue.hidden = false;
+  requestAnimationFrame(() => els.cue.classList.add('show'));
+  clearTimeout(cueTimer);
+  if (kind !== 'hold') cueTimer = setTimeout(hideCue, kind === 'pause' ? 1800 : 750);
+}
+function hideCue() {
+  cueKind = null;
+  clearTimeout(cueTimer);
+  els.cue.classList.remove('show');
+  cueTimer = setTimeout(() => { els.cue.hidden = true; }, 250);
 }
 
 // ---------- Pinch to drag a zoomed page ----------
@@ -606,7 +678,7 @@ function tickDot() {
 
 // Stop the camera when the tab is hidden, so it is never on in the background.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && gestureState === 'on') stopGestures();
+  if (document.hidden && gestureState === 'on') stopGestures('hidden');
 });
 
 // ---------- "Can't see your hand" ----------
@@ -819,9 +891,19 @@ async function setTocOpen(open, { focus = open, remember = true } = {}) {
 els.tocBtn.addEventListener('click', () => setTocOpen(!tocOpen, { focus: false }));
 els.pageBtn.addEventListener('click', () => setTocOpen(true));
 $('toc-close').addEventListener('click', () => setTocOpen(false));
-els.toc.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') setTocOpen(false);
+// Escape closes the sidebar from inside it or from the buttons that open it.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || !tocOpen || !els.help.hidden) return;
+  const from = document.activeElement;
+  if (els.toc.contains(from) || from === els.tocBtn || from === els.pageBtn || from === document.body) {
+    setTocOpen(false);
+  }
 });
+// The phone sidebar sits under the toolbar, whose height changes as it wraps.
+const toolbar = document.querySelector('.toolbar');
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty('--toolbar-h', `${toolbar.offsetHeight}px`);
+}).observe(toolbar);
 // On a phone the contents cover the book, so a tap on the book closes them.
 els.stage.addEventListener('pointerdown', () => { if (tocOpen && phone()) setTocOpen(false, { remember: false }); });
 
@@ -840,12 +922,16 @@ els.gotoForm.addEventListener('submit', (e) => {
   const n = Number(els.gotoInput.value);
   if (!Number.isInteger(n) || n < 1 || n > reader.pageCount) {
     els.gotoInput.setAttribute('aria-invalid', 'true');
+    els.gotoError.textContent = `Enter a page from 1 to ${reader.pageCount}.`;
     els.gotoInput.select();
     return;
   }
   jumpTo(n);
 });
-els.gotoInput.addEventListener('input', () => els.gotoInput.removeAttribute('aria-invalid'));
+els.gotoInput.addEventListener('input', () => {
+  els.gotoInput.removeAttribute('aria-invalid');
+  els.gotoError.textContent = '';
+});
 
 // ---------- Recent books ----------
 async function keepBook(file) {

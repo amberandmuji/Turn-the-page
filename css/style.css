@@ -644,7 +644,7 @@ body:has(.page-label:empty) .toc-btn { display: none; }
   border-radius: 50%;
   border: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(3, 105, 161, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.18);
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms, border-color 160ms;
 }
 .pinch-dot.grab::before {
@@ -814,6 +814,68 @@ body:has(.page-label:empty) .toc-btn { display: none; }
   border-color: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
+/* Big gesture cue in the middle of the book, readable from across the room */
+.cue {
+  --p: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 22px 16px;
+  min-width: 168px;
+  border-radius: 20px;
+  background: rgba(22, 24, 27, 0.82);
+  color: #fff;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 18px 40px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  transition: opacity 160ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cue[hidden] { display: none; }
+.cue.show { opacity: 1; transform: translate(-50%, -50%); }
+.cue-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+.cue.holding .cue-badge::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(#f87171 calc(var(--p) * 360deg), rgba(255, 255, 255, 0.15) 0);
+  -webkit-mask: radial-gradient(circle, transparent 37px, #000 38px);
+  mask: radial-gradient(circle, transparent 37px, #000 38px);
+}
+.cue-icon {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: #7dd3fc;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cue-text { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+
+.goto-error { margin: 0; font-size: 13px; color: var(--live); }
+.goto-error:empty { display: none; }
+
+/* Before a book is open, opening one is the main action; gestures can wait. */
+body:has(.page-label:empty) .gesture-btn:not(.active):not(:disabled) {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
 /* Page-turn animation (js/flip.js): pictures of the pages, and one leaf
    that turns over the spine. */
 .flip {
@@ -896,6 +958,13 @@ body:has(.page-label:empty) .view { display: none; }
 .view .icon { width: 16px; height: 16px; }
 .view .icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
 .view .zoom-label { min-width: 48px; font-size: 12.5px; }
+/* At "Fit" the level is still a read-out, so keep it legible. */
+.view .zoom-label:disabled { opacity: 1; color: var(--muted); }
+/* Bigger targets for fingers. */
+@media (pointer: coarse) {
+  .view .icon-btn, .view .zoom-label { min-height: 40px; height: 40px; }
+  .view .icon-btn { width: 40px; }
+}
 
 /* ---------- Camera preview ----------
    One card that folds into a small pill: a clip-path morph from the whole
@@ -1167,7 +1236,7 @@ kbd {
     padding: 8px 12px;
     row-gap: 6px;
   }
-  .library { grid-area: brand; gap: 12px; }
+  .library { grid-area: brand; gap: 8px; }
   .brand-text { display: none; }
   .nav { grid-area: nav; justify-content: center; }
   .nav:has(.page-label:empty) { display: none; }
@@ -1179,10 +1248,11 @@ kbd {
   .panel { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
   .panel::backdrop { background: rgba(15, 17, 20, 0.35); }
   .panel.recent { inset: auto 8px 8px 8px; width: auto; }
+  .toolbar { position: relative; z-index: 9; }
   /* No room to share on a phone: the contents slide over the book instead. */
   .sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: var(--toolbar-h, 0px) auto 0 0; /* under the toolbar, so its button still closes it */
     z-index: 8;
     width: min(320px, 86vw);
     transform: translateX(-100%);
@@ -1196,6 +1266,10 @@ kbd {
   .preview-text { font-size: 11.5px; }
   .hand-warning { max-width: calc(100vw - 32px); }
   .help-card { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .library .brand { display: none; } /* room for the buttons */
 }
 
 @media (prefers-reduced-motion: reduce) {
