@@ -2,6 +2,7 @@ import { Reader, ZOOMS } from './reader.js';
 import { HandCamera } from './camera.js';
 import { GestureDetector, palmCentre } from './gestures.js';
 import { HandWatch, WARNINGS } from './handwatch.js';
+import { PinchGrab } from './pinch.js';
 import { bookId, listBooks, getBook, rememberBook, updateBook, forgetBook, forgetAll } from './library.js';
 import { playTurnSound, flashEdge } from './feedback.js';
 import { load, save } from './storage.js';
@@ -99,6 +100,7 @@ const reader = new Reader(els.pages, (label) => {
 reader.zoom = load('zoom', 1);
 const detector = new GestureDetector({ sensitivity: settings.sensitivity, swapDirection: settings.swap });
 const watch = new HandWatch();
+const pinch = new PinchGrab();
 const camera = new HandCamera(els.video, els.overlay, onFrame);
 let gestureState = 'off'; // off | loading | on
 
@@ -345,6 +347,8 @@ async function startGestures() {
 
 function stopGestures(reason) {
   camera.stop();
+  if (pinchGrabbed || !pinchDot.hidden) endPinch(0, false);
+  pinch.reset();
   watch.reset();
   showHandWarning(null);
   els.liveDot.style.setProperty('--progress', 0);
@@ -363,7 +367,10 @@ els.gestureBtn.addEventListener('click', toggleGestures);
 
 function onFrame({ t, landmarks, gesture, score, light, motion }) {
   const hand = palmCentre(landmarks);
-  const action = detector.update({ t, hand, gesture, score });
+  // Zoomed in, a pinch grabs the page. While it's held (and just after),
+  // the hand is dragging, so it can't swipe, pause or fold anything.
+  const dragging = handPan(t, landmarks);
+  const action = dragging ? null : detector.update({ t, hand, gesture, score });
   if (action === 'next' || action === 'prev') watch.turned(t);
   showHandWarning(watch.update({ t, hand, light, motion }));
   const fist = detector.fistProgress(t);
@@ -379,6 +386,117 @@ function onFrame({ t, landmarks, gesture, score, light, motion }) {
     turn(action);
   }
 }
+
+// ---------- Pinch to drag a zoomed page ----------
+// A dot on the page follows your thumb and index finger. Pinch them together
+// and it fills in: the page is in your hand. Move to drag, open to let go.
+const pinchDot = document.createElement('div');
+pinchDot.className = 'pinch-dot';
+pinchDot.hidden = true;
+els.stage.append(pinchDot);
+let pinchGrabbed = false;
+let pinchReleasedAt = -Infinity;
+const PAN_GAIN = 1.6;     // page pixels per pixel of hand movement across the stage
+const AFTER_RELEASE = 450; // ms of no swipes after letting go
+
+// Returns true while the hand should be left out of swipe detection.
+function handPan(t, landmarks) {
+  const zoomed = reader.doc && reader.zoom > 1;
+  if (!zoomed) {
+    if (pinchGrabbed || !pinchDot.hidden) endPinch(t, false);
+    pinch.reset();
+    return false;
+  }
+  const p = pinch.update({ t, landmarks });
+  const box = els.stage.getBoundingClientRect();
+  if (p.state === 'none') {
+    pinchDot.hidden = true;
+  } else {
+    pinchDot.hidden = false;
+    pinchDot.style.transform = `translate(${p.x * box.width}px, ${p.y * box.height}px)`;
+  }
+  if (p.state === 'grab') {
+    if (!pinchGrabbed) {
+      pinchGrabbed = true;
+      stopGlide();
+      pinchDot.classList.add('grab');
+      els.pages.classList.add('grabbing');
+      detector.reset();
+    }
+    els.pages.scrollLeft -= p.dx * box.width * PAN_GAIN;
+    els.pages.scrollTop -= p.dy * box.height * PAN_GAIN;
+    return true;
+  }
+  if (pinchGrabbed) endPinch(t, true, box);
+  return t - pinchReleasedAt < AFTER_RELEASE;
+}
+
+function endPinch(t, glide, box) {
+  pinchGrabbed = false;
+  pinchReleasedAt = t;
+  pinchDot.classList.remove('grab');
+  els.pages.classList.remove('grabbing');
+  detector.reset();
+  if (glide && box) startGlide(-pinch.velocity.x * box.width * PAN_GAIN, -pinch.velocity.y * box.height * PAN_GAIN);
+  if (!glide) pinchDot.hidden = true;
+}
+
+// A quick release keeps a little momentum, then eases to a stop. The browser
+// stops the scroll at the page edges.
+let glideFrame = 0;
+function startGlide(vx, vy) {
+  stopGlide();
+  if (Math.hypot(vx, vy) < 150) return; // a gentle let-go just stops
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(48, now - last) / 1000;
+    last = now;
+    els.pages.scrollLeft += vx * dt;
+    els.pages.scrollTop += vy * dt;
+    const decay = Math.pow(0.04, dt); // loses most of its speed in about a second
+    vx *= decay;
+    vy *= decay;
+    if (Math.hypot(vx, vy) > 20) glideFrame = requestAnimationFrame(step);
+  };
+  glideFrame = requestAnimationFrame(step);
+}
+function stopGlide() {
+  cancelAnimationFrame(glideFrame);
+}
+
+// The mouse does the same: click and drag a zoomed page.
+let mouseDrag = null;
+els.pages.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'mouse' || e.button !== 0 || reader.zoom <= 1) return;
+  stopGlide();
+  mouseDrag = { x: e.clientX, y: e.clientY, samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }] };
+  els.pages.setPointerCapture(e.pointerId);
+  els.pages.classList.add('grabbing');
+  e.preventDefault();
+});
+els.pages.addEventListener('pointermove', (e) => {
+  if (!mouseDrag) return;
+  els.pages.scrollLeft -= e.clientX - mouseDrag.x;
+  els.pages.scrollTop -= e.clientY - mouseDrag.y;
+  mouseDrag.x = e.clientX;
+  mouseDrag.y = e.clientY;
+  mouseDrag.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+  if (mouseDrag.samples.length > 8) mouseDrag.samples.shift();
+});
+function endMouseDrag(e) {
+  if (!mouseDrag) return;
+  const recent = mouseDrag.samples.filter((s) => e.timeStamp - s.t < 100);
+  mouseDrag = null;
+  els.pages.classList.remove('grabbing');
+  if (recent.length >= 2) {
+    const a = recent[0];
+    const b = recent[recent.length - 1];
+    const dt = Math.max(1, b.t - a.t) / 1000;
+    startGlide(-(b.x - a.x) / dt, -(b.y - a.y) / dt);
+  }
+}
+els.pages.addEventListener('pointerup', endMouseDrag);
+els.pages.addEventListener('pointercancel', endMouseDrag);
 
 // ---------- Camera window ----------
 // Folds into a small pill so it doesn't cover the page. The button doesn't
