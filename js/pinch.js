@@ -8,14 +8,27 @@
 // returns { state, x, y, dx, dy }:
 //   state: 'none' (no hand), 'open' (hand seen, not pinching) or 'grab'
 //   x, y:  the pinch point in 0..1, mirrored like the camera preview
-//   dx, dy: how far it moved since the last frame while grabbing, else 0
-// Velocity for a flick is in .velocity ({ x, y } per second) after a release.
+//   dx, dy: how far to move the page since the last frame, else 0
+//
+// Keeping it steady
+// -----------------
+// The page follows the palm, not the fingertips. Fingertips move on their
+// own as you pinch and let go, and following them made the page slide away
+// just as you finished a drag. The palm only moves when your hand does.
+// On top of that:
+//   - as soon as the fingers start to part, the page holds still, so the
+//     let-go itself never moves it;
+//   - tiny movements (tracking jitter, a hand that isn't perfectly still)
+//     are ignored, so a held page doesn't wobble;
+//   - letting go stops the page where it is. No momentum.
 
 export const PINCH_DEFAULTS = {
   closeRatio: 0.28,  // fingertips this close (in palm lengths) is a pinch ...
-  openRatio: 0.45,   // ... and they must open past this to let go
+  holdRatio: 0.34,   // ... past this they're parting: the page stops moving ...
+  openRatio: 0.45,   // ... and past this it's let go
   holdFrames: 2,     // frames the pinch must be held before it grabs
-  smoothing: 0.55,   // weight of the newest position
+  smoothing: 0.4,    // weight of the newest position
+  deadband: 0.004,   // movement smaller than this (share of the frame) is ignored
   gapMs: 250,        // a hand missing this long lets go
 };
 
@@ -38,68 +51,69 @@ export class PinchGrab {
   reset() {
     this.grabbing = false;
     this.closeFrames = 0;
-    this.pos = null;       // smoothed { t, x, y }
+    this.pos = null;       // smoothed palm { x, y }
+    this.anchor = null;    // palm position the page was last moved to match
+    this.dot = null;       // smoothed pinch point, for the on-screen ring
     this.lastSeen = -Infinity;
-    this.samples = [];     // recent { t, x, y } while grabbing, for the flick
-    this.velocity = { x: 0, y: 0 };
   }
 
-  release(t) {
+  release() {
     this.grabbing = false;
     this.closeFrames = 0;
-    const recent = this.samples.filter((s) => t - s.t <= 120);
-    if (recent.length >= 2) {
-      const a = recent[0];
-      const b = recent[recent.length - 1];
-      const dt = Math.max(1, b.t - a.t) / 1000;
-      this.velocity = { x: (b.x - a.x) / dt, y: (b.y - a.y) / dt };
-    } else {
-      this.velocity = { x: 0, y: 0 };
-    }
-    this.samples = [];
+    this.anchor = null;
   }
 
   update({ t, landmarks }) {
     const o = this.opts;
+    const none = (state) => ({ state, x: this.dot?.x ?? 0, y: this.dot?.y ?? 0, dx: 0, dy: 0 });
     if (!landmarks || landmarks.length < 21) {
       if (t - this.lastSeen > o.gapMs) {
-        if (this.grabbing) this.release(this.lastSeen);
+        if (this.grabbing) this.release();
         this.pos = null;
+        this.dot = null;
       }
-      return { state: this.grabbing ? 'grab' : 'none', x: this.pos?.x ?? 0, y: this.pos?.y ?? 0, dx: 0, dy: 0 };
+      return none(this.grabbing ? 'grab' : 'none');
     }
     this.lastSeen = t;
 
-    const raw = {
-      x: 1 - (landmarks[4].x + landmarks[8].x) / 2,
-      y: (landmarks[4].y + landmarks[8].y) / 2,
-    };
     const a = o.smoothing;
-    const prev = this.pos;
-    const pos = prev
-      ? { t, x: a * raw.x + (1 - a) * prev.x, y: a * raw.y + (1 - a) * prev.y }
-      : { t, ...raw };
-    this.pos = pos;
+    const ease = (prev, next) => (prev ? { x: a * next.x + (1 - a) * prev.x, y: a * next.y + (1 - a) * prev.y } : next);
+    // Palm: wrist and the bases of the index and little fingers, mirrored.
+    const palm = {
+      x: 1 - (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3,
+      y: (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3,
+    };
+    this.pos = ease(this.pos, palm);
+    this.dot = ease(this.dot, { x: 1 - (landmarks[4].x + landmarks[8].x) / 2, y: (landmarks[4].y + landmarks[8].y) / 2 });
 
     const ratio = pinchRatio(landmarks);
     if (this.grabbing) {
-      if (ratio > o.openRatio) this.release(t);
+      if (ratio > o.openRatio) {
+        this.release();
+        return none('open');
+      }
     } else if (ratio < o.closeRatio) {
       this.closeFrames += 1;
-      if (this.closeFrames >= o.holdFrames) {
-        this.grabbing = true;
-        this.velocity = { x: 0, y: 0 };
-        this.samples = [{ t, x: pos.x, y: pos.y }];
-        // The grab starts here: no jump from where the fingers were.
-        return { state: 'grab', x: pos.x, y: pos.y, dx: 0, dy: 0 };
-      }
+      if (this.closeFrames < o.holdFrames) return none('open');
+      // The grab starts here: no jump from where the hand was.
+      this.grabbing = true;
+      this.anchor = { ...this.pos };
+      return none('grab');
     } else {
       this.closeFrames = 0;
+      return none('open');
     }
 
-    if (!this.grabbing) return { state: 'open', x: pos.x, y: pos.y, dx: 0, dy: 0 };
-    this.samples.push({ t, x: pos.x, y: pos.y });
-    if (this.samples.length > 12) this.samples.shift();
-    return { state: 'grab', x: pos.x, y: pos.y, dx: prev ? pos.x - prev.x : 0, dy: prev ? pos.y - prev.y : 0 };
+    // Fingers parting: hold still, and keep the anchor with the hand so
+    // nothing jumps if they close again.
+    if (ratio > o.holdRatio) {
+      this.anchor = { ...this.pos };
+      return none('grab');
+    }
+    const dx = this.pos.x - this.anchor.x;
+    const dy = this.pos.y - this.anchor.y;
+    if (Math.hypot(dx, dy) < o.deadband) return none('grab');
+    this.anchor = { ...this.pos };
+    return { state: 'grab', x: this.dot.x, y: this.dot.y, dx, dy };
   }
 }

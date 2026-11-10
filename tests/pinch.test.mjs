@@ -34,12 +34,30 @@ test('a held pinch grabs without a jump, then drags with the hand', () => {
   assert.ok(total > 0.05, `dragged ${total}`);
 });
 
-test('opening the fingers lets go and keeps the flick speed', () => {
+test('opening the fingers lets go without moving the page', () => {
   const p = new PinchGrab();
   let t = 0;
   for (let i = 0; i < 6; i++, t += 33) p.update({ t, landmarks: hand(0.5 - i * 0.02, 0.5, 0.1) });
-  assert.equal(p.update({ t, landmarks: hand(0.4, 0.5, 0.7) }).state, 'open');
-  assert.ok(p.velocity.x > 0.2, `velocity ${p.velocity.x}`);
+  // Hand still, fingers opening bit by bit (the fingertip midpoint shifts as they do).
+  let moved = 0;
+  for (const gap of [0.2, 0.3, 0.38, 0.44, 0.6]) {
+    const lm = hand(0.4, 0.5, gap);
+    lm[4] = { x: lm[4].x - 0.03, y: lm[4].y + 0.02 };
+    const r = p.update({ t: (t += 33), landmarks: lm });
+    moved += Math.abs(r.dx) + Math.abs(r.dy);
+  }
+  assert.ok(moved < 0.01, `moved ${moved}`);
+  assert.equal(p.update({ t: (t += 33), landmarks: hand(0.4, 0.5, 0.7) }).state, 'open');
+});
+
+test('a held page ignores tracking jitter', () => {
+  const p = new PinchGrab();
+  let moved = 0;
+  for (let i = 0; i < 60; i++) {
+    const j = (i % 2 ? 1 : -1) * 0.003;
+    moved += Math.abs(p.update({ t: i * 33, landmarks: hand(0.5 + j, 0.5 - j, 0.1) }).dx);
+  }
+  assert.equal(moved, 0);
 });
 
 test('a half-open pinch stays grabbed (no flicker)', () => {

@@ -396,7 +396,7 @@ pinchDot.hidden = true;
 els.stage.append(pinchDot);
 let pinchGrabbed = false;
 let pinchReleasedAt = -Infinity;
-const PAN_GAIN = 1.6;     // page pixels per pixel of hand movement across the stage
+const PAN_GAIN = 1.25;    // page pixels per pixel of hand movement across the stage
 const AFTER_RELEASE = 450; // ms of no swipes after letting go
 
 // Returns true while the hand should be left out of swipe detection.
@@ -437,12 +437,12 @@ function endPinch(t, glide, box) {
   pinchDot.classList.remove('grab');
   els.pages.classList.remove('grabbing');
   detector.reset();
-  if (glide && box) startGlide(-pinch.velocity.x * box.width * PAN_GAIN, -pinch.velocity.y * box.height * PAN_GAIN);
+  // The page stops where you let go: no glide, so it never drifts.
   if (!glide) pinchDot.hidden = true;
 }
 
-// A quick release keeps a little momentum, then eases to a stop. The browser
-// stops the scroll at the page edges.
+// A quick mouse flick keeps a little momentum, then eases to a stop. The
+// browser stops the scroll at the page edges. (Hand drags never glide.)
 let glideFrame = 0;
 function startGlide(vx, vy) {
   stopGlide();
@@ -453,7 +453,7 @@ function startGlide(vx, vy) {
     last = now;
     els.pages.scrollLeft += vx * dt;
     els.pages.scrollTop += vy * dt;
-    const decay = Math.pow(0.04, dt); // loses most of its speed in about a second
+    const decay = Math.pow(0.004, dt); // stops within about half a second
     vx *= decay;
     vy *= decay;
     if (Math.hypot(vx, vy) > 20) glideFrame = requestAnimationFrame(step);
