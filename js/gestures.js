@@ -7,20 +7,44 @@
 // to the right of the screen as the reader sees it in the preview.
 //
 // update() returns one of 'next', 'prev', 'pause' or null.
+//
+// How a swipe is recognised
+// -------------------------
+// Hand movement is cut into strokes: a stroke starts when the hand moves
+// sideways quickly and ends when it slows down or reverses. A stroke turns the
+// page when it is long enough and fast enough, and mostly sideways.
+//
+// Two natural movements look like swipes the wrong way, and are ignored:
+//   - the wind-up: moving the hand into position before swiping. It is
+//     usually slower than the swipe, so it fails the speed check.
+//   - the return: bringing the hand back after a swipe. A stroke that starts
+//     soon after a page-turning stroke, in the opposite direction, is treated
+//     as a return and never turns the page. Returns are also usually slower.
 
 export const DEFAULTS = {
   sensitivity: 5,       // 1 (needs a big, fast swipe) .. 10 (a small flick is enough)
-  windowMs: 400,        // how far back we look when measuring a swipe
-  cooldownMs: 900,      // ignore swipes for this long after a page turn
+  swapDirection: false, // true: left-to-right means next page
+  smoothing: 0.5,       // 0..1, weight of the newest sample in the smoothed position
+  startSpeed: 0.5,      // frame widths per second at which a stroke starts
+  endSpeed: 0.25,       // ... and below which it ends
+  returnMs: 700,        // an opposite stroke starting this soon after a stroke is a return
+  repeatMs: 450,        // minimum gap between two page turns
+  gapMs: 250,           // a hand missing for longer than this ends the stroke
   fistHoldMs: 800,      // a fist must be held this long to pause
   fistMinScore: 0.6,    // how sure the recogniser must be that it sees a fist
   maxSlope: 0.7,        // vertical movement allowed per unit of horizontal movement
 };
 
-// Sensitivity 1..10 maps to the share of the frame width a swipe must cover.
+const clampSensitivity = (s) => Math.min(10, Math.max(1, Number(s) || DEFAULTS.sensitivity));
+
+// Share of the frame width a swipe must cover: 1 -> 0.36, 5 -> 0.24, 10 -> 0.09.
 export function swipeDistance(sensitivity) {
-  const s = Math.min(10, Math.max(1, Number(sensitivity) || DEFAULTS.sensitivity));
-  return 0.40 - (s - 1) * (0.28 / 9); // 1 -> 0.40, 10 -> 0.12
+  return 0.36 - (clampSensitivity(sensitivity) - 1) * 0.03;
+}
+
+// Peak speed a swipe must reach, in frame widths per second: 1 -> 1.6, 5 -> 1.0, 10 -> 0.3.
+export function swipeSpeed(sensitivity) {
+  return 1.6 - (clampSensitivity(sensitivity) - 1) * (1.3 / 9);
 }
 
 export class GestureDetector {
@@ -33,9 +57,15 @@ export class GestureDetector {
     this.opts.sensitivity = value;
   }
 
+  setSwapDirection(on) {
+    this.opts.swapDirection = !!on;
+  }
+
   reset() {
-    this.history = [];
-    this.cooldownUntil = 0;
+    this.last = null;        // last smoothed sample { t, x, y }
+    this.stroke = null;      // stroke in progress
+    this.lastStroke = null;  // { dir, endT } of the last finished stroke
+    this.lastTurnAt = -Infinity;
     this.fistSince = null;
   }
 
@@ -50,14 +80,20 @@ export class GestureDetector {
     const o = this.opts;
 
     if (!hand) {
-      this.history = [];
+      // Fast movement can blur the hand for a frame or two: keep the stroke
+      // alive across a short gap, end it after a long one.
+      if (this.last && t - this.last.t > o.gapMs) {
+        this.endStroke(this.last.t);
+        this.last = null;
+      }
       this.fistSince = null;
       return null;
     }
 
-    // Fist: hold it to pause. While the hand is closed it never counts as a swipe.
+    // Fist: hold it to pause. A closed hand never counts as a swipe.
     if (gesture === 'Closed_Fist' && score >= o.fistMinScore) {
-      this.history = [];
+      this.endStroke(t);
+      this.last = null;
       if (this.fistSince === null) this.fistSince = t;
       if (t - this.fistSince >= o.fistHoldMs) {
         this.fistSince = null;
@@ -67,21 +103,62 @@ export class GestureDetector {
     }
     this.fistSince = null;
 
-    this.history.push({ t, x: hand.x, y: hand.y });
-    while (this.history.length && t - this.history[0].t > o.windowMs) this.history.shift();
+    if (!this.last || t - this.last.t > o.gapMs) {
+      this.endStroke(this.last ? this.last.t : t);
+      this.last = { t, x: hand.x, y: hand.y };
+      return null;
+    }
 
-    if (t < this.cooldownUntil || this.history.length < 2) return null;
+    const a = o.smoothing;
+    const cur = { t, x: a * hand.x + (1 - a) * this.last.x, y: a * hand.y + (1 - a) * this.last.y };
+    const dt = Math.max(1, t - this.last.t) / 1000;
+    const vx = (cur.x - this.last.x) / dt;
+    const dx = cur.x - this.last.x;
+    const dy = cur.y - this.last.y;
+    this.last = cur;
 
-    const first = this.history[0];
-    const dx = hand.x - first.x;
-    const dy = hand.y - first.y;
-    if (Math.abs(dx) < swipeDistance(o.sensitivity)) return null;
-    if (Math.abs(dy) > Math.abs(dx) * o.maxSlope) return null;
+    const dir = Math.sign(vx);
+    const speed = Math.abs(vx);
 
-    this.history = [];
-    this.cooldownUntil = t + o.cooldownMs;
+    // End the stroke when the hand slows down or turns around.
+    if (this.stroke && (speed < o.endSpeed || (dir !== 0 && dir !== this.stroke.dir))) {
+      this.endStroke(t);
+    }
+
+    if (!this.stroke) {
+      if (speed < o.startSpeed) return null;
+      const isReturn = !!this.lastStroke
+        && this.lastStroke.dir !== dir
+        && t - this.lastStroke.endT < o.returnMs;
+      this.stroke = { dir, dx: 0, dy: 0, peak: 0, fired: false, isReturn };
+    }
+
+    const s = this.stroke;
+    s.dx += dx;
+    s.dy += Math.abs(dy);
+    s.peak = Math.max(s.peak, speed);
+
+    if (s.fired || s.isReturn) return null;
+    if (Math.abs(s.dx) < swipeDistance(o.sensitivity)) return null;
+    if (s.peak < swipeSpeed(o.sensitivity)) return null;
+    if (s.dy > Math.abs(s.dx) * o.maxSlope) return null;
+    if (t - this.lastTurnAt < o.repeatMs) return null;
+
+    s.fired = true;
+    this.lastTurnAt = t;
     // Right-to-left on screen (x shrinking) means next page, like flicking paper.
-    return dx < 0 ? 'next' : 'prev';
+    const leftward = s.dx < 0;
+    return leftward !== o.swapDirection ? 'next' : 'prev';
+  }
+
+  endStroke(t) {
+    const s = this.stroke;
+    if (!s) return;
+    this.stroke = null;
+    // Only a stroke that turned the page sets up a return to ignore. An
+    // unfired stroke is often the wind-up before the real swipe, which must
+    // not be blocked.
+    if (s.fired) this.lastStroke = { dir: s.dir, endT: t };
   }
 }
 

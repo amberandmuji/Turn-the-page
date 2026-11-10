@@ -30,24 +30,32 @@ const els = {
   sound: $('opt-sound'),
   flash: $('opt-flash'),
   showPreview: $('opt-preview'),
+  swap: $('opt-swap'),
+  gestureHint: $('gesture-hint'),
   help: $('help'),
   helpBtn: $('help-btn'),
   helpClose: $('help-close'),
 };
 
+// Saved under a new key so everyone starts with the two-page spread on.
 const settings = {
   sensitivity: 5,
-  spread: false,
+  spread: true,
+  swap: false,
   sound: true,
   flash: true,
   preview: true,
-  ...load('settings', {}),
+  ...load('settings-v2', {}),
 };
+
+// The spread needs room: on a narrow window, show one page even when it's on.
+const SPREAD_MIN_WIDTH = 700;
+const wantSpread = () => settings.spread && els.stage.clientWidth >= SPREAD_MIN_WIDTH;
 
 const reader = new Reader(els.pages, (label) => {
   els.pageLabel.textContent = label;
 });
-const detector = new GestureDetector({ sensitivity: settings.sensitivity });
+const detector = new GestureDetector({ sensitivity: settings.sensitivity, swapDirection: settings.swap });
 const camera = new HandCamera(els.video, els.overlay, onFrame);
 let gestureState = 'off'; // off | loading | on
 
@@ -59,21 +67,24 @@ function applySettings() {
   els.sound.checked = settings.sound;
   els.flash.checked = settings.flash;
   els.showPreview.checked = settings.preview;
+  els.swap.checked = settings.swap;
+  detector.setSwapDirection(settings.swap);
   els.preview.hidden = !(settings.preview && gestureState === 'on');
   detector.setSensitivity(settings.sensitivity);
 }
 
 function updateSetting(key, value) {
   settings[key] = value;
-  save('settings', settings);
+  save('settings-v2', settings);
   applySettings();
 }
 
 els.sensitivity.addEventListener('input', () => updateSetting('sensitivity', Number(els.sensitivity.value)));
 els.spread.addEventListener('change', async () => {
   updateSetting('spread', els.spread.checked);
-  await reader.setSpread(settings.spread);
+  await reader.setSpread(wantSpread());
 });
+els.swap.addEventListener('change', () => updateSetting('swap', els.swap.checked));
 els.sound.addEventListener('change', () => updateSetting('sound', els.sound.checked));
 els.flash.addEventListener('change', () => updateSetting('flash', els.flash.checked));
 els.showPreview.addEventListener('change', () => updateSetting('preview', els.showPreview.checked));
@@ -102,7 +113,7 @@ async function openFile(file) {
   try {
     setStatus(`Opening ${file.name}…`);
     els.empty.hidden = true;
-    await reader.setSpread(settings.spread);
+    reader.spread = wantSpread();
     await reader.open(file);
     document.title = `${file.name.replace(/\.pdf$/i, '')} · Turn the page`;
     setStatus(gestureState === 'on' ? 'Swipe to turn the page' : '');
@@ -130,6 +141,15 @@ els.stage.addEventListener('drop', (e) => {
 });
 
 // ---------- Turning pages ----------
+// Shows which way a gesture was read, so a wrong turn is easy to spot.
+let hintTimer;
+function showGestureHint(direction) {
+  els.gestureHint.textContent = direction === 'next' ? '← Next' : 'Previous →';
+  els.gestureHint.classList.add('show');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => els.gestureHint.classList.remove('show'), 900);
+}
+
 async function turn(direction) {
   const moved = direction === 'next' ? await reader.next() : await reader.prev();
   if (!moved) return;
@@ -158,7 +178,7 @@ document.addEventListener('keydown', (e) => {
 let resizeTimer;
 new ResizeObserver(() => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => reader.render(), 150);
+  resizeTimer = setTimeout(() => reader.setSpread(wantSpread()), 150);
 }).observe(els.stage);
 
 // ---------- Gestures ----------
@@ -213,7 +233,10 @@ function onFrame({ t, landmarks, gesture, score }) {
   const action = detector.update({ t, hand: palmCentre(landmarks), gesture, score });
   els.fistRing.style.setProperty('--progress', detector.fistProgress(t));
   if (action === 'pause') stopGestures('fist');
-  else if (action) turn(action);
+  else if (action) {
+    showGestureHint(action);
+    turn(action);
+  }
 }
 
 // Stop the camera when the tab is hidden, so it is never on in the background.

@@ -1,56 +1,119 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GestureDetector, swipeDistance, palmCentre } from '../js/gestures.js';
+import { GestureDetector, swipeDistance, swipeSpeed, palmCentre } from '../js/gestures.js';
 
-// Feeds a hand moving from x0 to x1 over durationMs, one frame every 33 ms.
-function sweep(det, { from, to, startT = 0, durationMs = 250, y0 = 0.5, y1 = 0.5, gesture = 'Open_Palm' }) {
+const FRAME = 33; // about 30 frames a second, like a webcam
+
+// Plays a hand path through the detector and returns the actions it fires.
+// Each move is { to, ms } (eased like a real hand), or { hold: ms } to stay
+// still, or { gone: ms } for the hand dropping out of view. Optional y / toY
+// and gesture apply per move.
+function play(det, moves, start = { x: 0.5, y: 0.5 }) {
   const out = [];
-  const steps = Math.max(1, Math.round(durationMs / 33));
-  for (let i = 0; i <= steps; i++) {
-    const f = i / steps;
-    const r = det.update({
-      t: startT + f * durationMs,
-      hand: { x: from + (to - from) * f, y: y0 + (y1 - y0) * f },
-      gesture,
-      score: 0.9,
-    });
+  let t = 0, x = start.x, y = start.y;
+  const feed = (hand, gesture = 'Open_Palm') => {
+    const r = det.update({ t, hand, gesture, score: 0.9 });
     if (r) out.push(r);
+    t += FRAME;
+  };
+  feed({ x, y });
+  for (const m of moves) {
+    if (m.hold !== undefined) {
+      for (let e = 0; e < m.hold; e += FRAME) feed({ x, y }, m.gesture);
+    } else if (m.gone !== undefined) {
+      for (let e = 0; e < m.gone; e += FRAME) feed(null);
+    } else {
+      const x0 = x, y0 = y, y1 = m.toY ?? y;
+      const n = Math.max(1, Math.round(m.ms / FRAME));
+      for (let i = 1; i <= n; i++) {
+        const f = (1 - Math.cos(Math.PI * i / n)) / 2; // ease in and out
+        x = x0 + (m.to - x0) * f;
+        y = y0 + (y1 - y0) * f;
+        feed(m.dropAt === i ? null : { x, y }, m.gesture);
+      }
+    }
   }
   return out;
 }
 
-test('right-to-left swipe turns to the next page', () => {
-  assert.deepEqual(sweep(new GestureDetector(), { from: 0.75, to: 0.3 }), ['next']);
+test('a right-to-left swipe turns to the next page once', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.2, ms: 300 }], { x: 0.75, y: 0.5 }), ['next']);
 });
 
-test('left-to-right swipe turns to the previous page', () => {
-  assert.deepEqual(sweep(new GestureDetector(), { from: 0.3, to: 0.75 }), ['prev']);
+test('a left-to-right swipe turns to the previous page once', () => {
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.8, ms: 300 }], { x: 0.25, y: 0.5 }), ['prev']);
+});
+
+test('swiping and bringing the hand back turns only one page', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [
+    { to: 0.2, ms: 300 },   // swipe
+    { hold: 100 },
+    { to: 0.75, ms: 350 },  // bring the hand back at a natural pace
+  ], { x: 0.75, y: 0.5 }), ['next']);
+});
+
+test('a fast return right after the swipe is still ignored', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [
+    { to: 0.2, ms: 250 },
+    { to: 0.75, ms: 250 },
+  ], { x: 0.75, y: 0.5 }), ['next']);
+});
+
+test('a slow wind-up before the swipe does not turn back a page', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [
+    { to: 0.8, ms: 700 },   // move the hand into position
+    { hold: 66 },
+    { to: 0.25, ms: 300 },  // the swipe
+  ], { x: 0.5, y: 0.5 }), ['next']);
+});
+
+test('the wind-up does not block the swipe that follows it', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [
+    { to: 0.8, ms: 600 },
+    { to: 0.2, ms: 300 },   // no pause between them
+  ], { x: 0.5, y: 0.5 }), ['next']);
+});
+
+test('two swipes in a row turn two pages', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [
+    { to: 0.2, ms: 300 },
+    { to: 0.75, ms: 500 },  // return
+    { hold: 300 },
+    { to: 0.2, ms: 300 },   // second swipe
+    { to: 0.75, ms: 500 },
+  ], { x: 0.75, y: 0.5 }), ['next', 'next']);
+});
+
+test('a short glitch in tracking mid-swipe does not lose the swipe', () => {
+  const det = new GestureDetector();
+  assert.deepEqual(play(det, [{ to: 0.2, ms: 330, dropAt: 4 }], { x: 0.75, y: 0.5 }), ['next']);
 });
 
 test('a small or slow drift does not turn the page', () => {
-  assert.deepEqual(sweep(new GestureDetector(), { from: 0.5, to: 0.4 }), []);
-  assert.deepEqual(sweep(new GestureDetector(), { from: 0.8, to: 0.2, durationMs: 3000 }), []);
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.4, ms: 200 }], { x: 0.5, y: 0.5 }), []);
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.2, ms: 2500 }], { x: 0.8, y: 0.5 }), []);
 });
 
 test('mostly vertical movement does not turn the page', () => {
-  const det = new GestureDetector();
-  assert.deepEqual(sweep(det, { from: 0.7, to: 0.4, y0: 0.1, y1: 0.9 }), []);
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.45, toY: 0.95, ms: 300 }], { x: 0.75, y: 0.05 }), []);
 });
 
-test('one swipe turns exactly one page, and the cooldown blocks the return stroke', () => {
-  const det = new GestureDetector();
-  const first = sweep(det, { from: 0.8, to: 0.2 });
-  const back = sweep(det, { from: 0.2, to: 0.8, startT: 300 });
-  assert.deepEqual(first, ['next']);
-  assert.deepEqual(back, []);
-  const later = sweep(det, { from: 0.8, to: 0.2, startT: 2000 });
-  assert.deepEqual(later, ['next']);
-});
-
-test('higher sensitivity accepts a smaller swipe', () => {
+test('higher sensitivity accepts a smaller, slower swipe', () => {
   assert.ok(swipeDistance(10) < swipeDistance(1));
-  assert.deepEqual(sweep(new GestureDetector({ sensitivity: 1 }), { from: 0.6, to: 0.4 }), []);
-  assert.deepEqual(sweep(new GestureDetector({ sensitivity: 10 }), { from: 0.6, to: 0.4 }), ['next']);
+  assert.ok(swipeSpeed(10) < swipeSpeed(1));
+  const small = [{ to: 0.42, ms: 300 }];
+  assert.deepEqual(play(new GestureDetector({ sensitivity: 1 }), small, { x: 0.58, y: 0.5 }), []);
+  assert.deepEqual(play(new GestureDetector({ sensitivity: 10 }), small, { x: 0.58, y: 0.5 }), ['next']);
+});
+
+test('swap direction reverses next and previous', () => {
+  const det = new GestureDetector({ swapDirection: true });
+  assert.deepEqual(play(det, [{ to: 0.2, ms: 300 }], { x: 0.75, y: 0.5 }), ['prev']);
 });
 
 test('a held fist pauses once, and a quick fist does not', () => {
@@ -58,7 +121,6 @@ test('a held fist pauses once, and a quick fist does not', () => {
   const fist = (t) => det.update({ t, hand: { x: 0.5, y: 0.5 }, gesture: 'Closed_Fist', score: 0.9 });
   assert.equal(fist(0), null);
   assert.equal(fist(300), null);
-  // Hand opens before the hold time: no pause, and the timer restarts.
   det.update({ t: 400, hand: { x: 0.5, y: 0.5 }, gesture: 'Open_Palm', score: 0.9 });
   assert.equal(fist(500), null);
   assert.equal(fist(1000), null);
@@ -66,15 +128,7 @@ test('a held fist pauses once, and a quick fist does not', () => {
 });
 
 test('a moving fist never counts as a swipe', () => {
-  const det = new GestureDetector();
-  assert.deepEqual(sweep(det, { from: 0.8, to: 0.2, gesture: 'Closed_Fist', durationMs: 200 }), []);
-});
-
-test('losing the hand clears the swipe in progress', () => {
-  const det = new GestureDetector();
-  det.update({ t: 0, hand: { x: 0.8, y: 0.5 }, gesture: 'None', score: 0 });
-  det.update({ t: 100, hand: null, gesture: 'None', score: 0 });
-  assert.equal(det.update({ t: 200, hand: { x: 0.2, y: 0.5 }, gesture: 'None', score: 0 }), null);
+  assert.deepEqual(play(new GestureDetector(), [{ to: 0.2, ms: 300, gesture: 'Closed_Fist' }], { x: 0.75, y: 0.5 }), []);
 });
 
 test('palm centre is mirrored to match the preview', () => {

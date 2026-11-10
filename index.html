@@ -32,6 +32,7 @@
       <small>Higher means a shorter swipe is enough.</small>
     </label>
     <label class="check"><input id="opt-spread" type="checkbox"> Two-page spread</label>
+    <label class="check"><input id="opt-swap" type="checkbox"> Swap swipe direction</label>
     <label class="check"><input id="opt-sound" type="checkbox"> Sound on page turn</label>
     <label class="check"><input id="opt-flash" type="checkbox"> Flash on page turn</label>
     <label class="check"><input id="opt-preview" type="checkbox"> Show camera preview</label>
@@ -56,6 +57,7 @@
     <video id="video" playsinline muted></video>
     <canvas id="overlay"></canvas>
     <div id="fist-ring" class="fist-ring" title="Hold a fist to pause"></div>
+    <div id="gesture-hint" class="gesture-hint" aria-live="polite"></div>
   </aside>
 
   <div id="help" class="help" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
@@ -67,7 +69,7 @@
         <li><strong>Swipe right to left</strong> in the air for the next page, <strong>left to right</strong> for the previous one.</li>
         <li><strong>Hold a fist</strong> for about a second to pause. The camera turns off. Press <kbd>G</kbd> or click Start gestures to resume.</li>
       </ol>
-      <p>Tips: sit about an arm's length from the camera, keep your hand in good light, and make one clear sweep. Arrow keys work too.</p>
+      <p>Tips: sit about an arm's length from the camera, keep your hand in good light, and make one quick, clear sweep across the camera. Bringing your hand back slowly afterwards won't turn the page back. Arrow keys work too.</p>
       <p class="privacy">Hand tracking runs in your browser. No video, images or books are uploaded.</p>
       <button id="help-close" class="primary">Got it</button>
     </div>
