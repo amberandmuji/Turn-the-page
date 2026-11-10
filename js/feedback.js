@@ -1,22 +1,55 @@
-// A soft click and an edge flash when the page turns.
+// A paper page-turn sound and an edge flash when the page turns.
+// The sound is made on the fly from filtered noise, like paper rustling:
+// a short swish as the page lifts and slides, then a soft flap as it lands.
+// No audio files are needed.
 let audio = null;
+let noise = null;
+
+function noiseBuffer(ctx) {
+  const length = Math.floor(ctx.sampleRate * 0.6);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  // Slightly "grainy" noise: random crackles over white noise, like paper fibres.
+  for (let i = 0; i < length; i++) {
+    const crackle = Math.random() < 0.02 ? (Math.random() * 2 - 1) * 2.5 : 0;
+    data[i] = (Math.random() * 2 - 1) * 0.6 + crackle;
+  }
+  return buffer;
+}
+
+// One burst of filtered noise: a band that sweeps from one pitch to another.
+function burst(ctx, t, { dur, from, to, q, peak, attack }) {
+  const src = ctx.createBufferSource();
+  src.buffer = noise;
+  src.playbackRate.value = 0.9 + Math.random() * 0.2; // no two turns sound the same
+  const band = ctx.createBiquadFilter();
+  band.type = 'bandpass';
+  band.Q.value = q;
+  band.frequency.setValueAtTime(from, t);
+  band.frequency.exponentialRampToValueAtTime(to, t + dur);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(peak, t + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(band).connect(gain).connect(ctx.destination);
+  src.start(t, Math.random() * 0.2);
+  src.stop(t + dur + 0.02);
+}
 
 export function playTurnSound(direction) {
   try {
     audio = audio || new AudioContext();
-    const t = audio.currentTime;
-    const osc = audio.createOscillator();
-    const gain = audio.createGain();
-    osc.type = 'sine';
-    // Slightly higher pitch going forward, lower going back.
-    osc.frequency.setValueAtTime(direction === 'next' ? 660 : 520, t);
-    osc.frequency.exponentialRampToValueAtTime(direction === 'next' ? 880 : 390, t + 0.08);
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.15, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    osc.connect(gain).connect(audio.destination);
-    osc.start(t);
-    osc.stop(t + 0.13);
+    if (audio.state === 'suspended') audio.resume();
+    noise = noise || noiseBuffer(audio);
+    const t = audio.currentTime + 0.01;
+    // Turning back sounds a touch lower, so the two directions feel different.
+    const pitch = direction === 'next' ? 1 : 0.85;
+    // The page lifts and slides across: a rising, airy swish.
+    burst(audio, t, { dur: 0.28, from: 1800 * pitch, to: 4200 * pitch, q: 0.9, peak: 0.55, attack: 0.09 });
+    // Paper rubbing against paper underneath it.
+    burst(audio, t + 0.04, { dur: 0.22, from: 5200 * pitch, to: 2600 * pitch, q: 2.5, peak: 0.18, attack: 0.05 });
+    // The page lands: a soft, low flap.
+    burst(audio, t + 0.24, { dur: 0.12, from: 700 * pitch, to: 300 * pitch, q: 1.2, peak: 0.45, attack: 0.008 });
   } catch {
     // Audio blocked or unavailable; the flash still shows.
   }
