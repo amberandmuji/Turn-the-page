@@ -66,13 +66,15 @@
         break;
       }
     }
-    return el && el !== document.documentElement ? el : document.body;
+    // Our own card (outside <body>) must never be the target: Kindle ignores
+    // keys aimed at elements that aren't part of the book.
+    if (!el || el === host || !el.ownerDocument.body?.contains(el)) return document.body;
+    return el;
   }
 
-  function pressArrow(dir) {
+  function pressArrow(dir, target = focusedElement()) {
     const key = dir === 'next' ? 'ArrowRight' : 'ArrowLeft';
     const keyCode = dir === 'next' ? 39 : 37;
-    const target = focusedElement();
     for (const type of ['keydown', 'keyup']) {
       target.dispatchEvent(new KeyboardEvent(type, {
         key, code: key, keyCode, which: keyCode, bubbles: true, cancelable: true, composed: true,
@@ -112,12 +114,19 @@
       pressArrow(dir);
       return true;
     },
+    // The same key aimed at the page itself, for when focus is somewhere odd.
+    bodyKey(dir) {
+      if (focusedElement() === document.body) return false;
+      pressArrow(dir, document.body);
+      return true;
+    },
   };
 
   async function turn(dir) {
     const order = preferred === 'key' || (!preferred && !findButton(dir))
-      ? ['key', 'button']
-      : ['button', 'key'];
+      ? ['key', 'button', 'bodyKey']
+      : ['button', 'key', 'bodyKey'];
+    if (preferred === 'bodyKey') order.unshift('bodyKey');
     for (const method of order) {
       const watch = pageChanged(700);
       if (!METHODS[method](dir)) continue;
@@ -295,7 +304,13 @@
     if (on) drawHand(null);
     if (remember) chrome.storage.local.set({ cardMinimised: on }).catch(() => {});
   }
-  fold.addEventListener('click', () => setMinimised(!minimised));
+  // Clicking the button mustn't take keyboard focus away from the book,
+  // or Kindle stops hearing the arrow keys that turn its pages.
+  fold.addEventListener('pointerdown', (e) => e.preventDefault());
+  fold.addEventListener('click', () => {
+    setMinimised(!minimised);
+    if (document.activeElement === host) fold.blur();
+  });
   chrome.storage.local.get('cardMinimised').then(({ cardMinimised }) => setMinimised(!!cardMinimised, false)).catch(() => {});
 
   const CONNECTIONS = [
