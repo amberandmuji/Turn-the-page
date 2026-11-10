@@ -181,7 +181,7 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
    the hands-free controls. How the page is shown (zoom, full screen) lives
    in the bar at the bottom. */
 .library, .nav, .actions { display: flex; align-items: center; gap: 8px; }
-.library { gap: 20px; min-width: 0; }
+.library { gap: 12px; min-width: 0; }
 @media (max-width: 1000px) {
   .brand-text { display: none; }
 }
@@ -210,7 +210,6 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   font-variant-numeric: tabular-nums;
   transition: color 120ms;
 }
-.nav #toc-btn[aria-expanded="true"] { color: var(--accent-text); background: var(--accent-soft); }
 
 /* Zoom: out, the level (click for "fit"), in */
 .zoom { display: flex; align-items: center; }
@@ -277,15 +276,38 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .panel h2 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
 .icon-btn.ghost { border-color: transparent; background: transparent; }
 
-/* Contents: go to a page, then the PDF's own chapters */
-.panel.toc {
-  inset: 60px auto auto max(16px, calc(50% - 180px)); /* under the page number */
-  width: 360px;
-  flex-direction: column;
-  padding-bottom: 0;
+/* Contents: a sidebar on the left that makes room for itself, so the book
+   moves over instead of being covered. Go to a page, then the chapters. */
+.workspace { flex: 1; display: flex; min-height: 0; }
+.sidebar {
+  flex: none;
+  width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border-right: 1px solid transparent;
+  transition: width 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms;
 }
-/* Only while open: a closed popover must stay display: none. */
-.panel.toc:popover-open { display: flex; }
+.sidebar.open { width: 300px; border-right-color: var(--border); }
+.sidebar-inner {
+  width: 300px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity 160ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sidebar.open .sidebar-inner { opacity: 1; transform: none; transition-delay: 60ms; }
+.sidebar h2 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
+.sidebar .panel-head { padding-left: 16px; }
+.sidebar .goto { padding-left: 16px; padding-right: 16px; }
+.sidebar .toc-tree { flex: 1; padding-left: 4px; }
+.sidebar .toc-empty { padding-left: 16px; }
+.toc-btn[aria-expanded="true"] { color: var(--accent-text); background: var(--accent-soft); border-color: transparent; }
+body:has(.page-label:empty) .toc-btn { display: none; }
+.library .brand { margin-right: 8px; }
+.stage { min-width: 0; }
+
 .goto { display: grid; gap: 6px; padding: 8px 20px 16px; border-bottom: 1px solid var(--border); }
 .goto label { font-size: 13px; color: var(--muted); }
 .goto-row { display: flex; align-items: center; gap: 8px; }
@@ -345,7 +367,8 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .toc-link:disabled { opacity: 0.5; }
 .toc-title { text-wrap: pretty; }
 .toc-page { flex: none; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.toc-link[aria-current="true"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 550; }
+.toc-link[aria-current="true"],
+.toc-link[aria-current="true"]:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-text); font-weight: 550; }
 .toc-link[aria-current="true"] .toc-page { color: inherit; }
 .toc-empty { margin: 0; padding: 16px 20px 20px; color: var(--muted); font-size: 14px; }
 
@@ -1091,7 +1114,18 @@ kbd {
   .actions { grid-area: actions; gap: 6px; }
   .panel { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
   .panel::backdrop { background: rgba(15, 17, 20, 0.35); }
-  .panel.toc, .panel.recent { inset: auto 8px 8px 8px; width: auto; }
+  .panel.recent { inset: auto 8px 8px 8px; width: auto; }
+  /* No room to share on a phone: the contents slide over the book instead. */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 8;
+    width: min(320px, 86vw);
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms;
+  }
+  .sidebar.open { width: min(320px, 86vw); transform: none; box-shadow: var(--raised-shadow); }
+  .sidebar-inner { width: 100%; }
   .statusbar .privacy { display: none; }
   .status-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .preview-card { width: 168px; }

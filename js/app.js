@@ -91,7 +91,10 @@ const reader = new Reader(els.pages, (label) => {
   // Grey out the arrows at the first and last page.
   els.prevBtn.disabled = reader.page <= 1;
   els.nextBtn.disabled = reader.page + reader.step > reader.pageCount;
-  if (els.toc.matches(':popover-open')) markCurrentChapter();
+  if (tocOpen) {
+    markCurrentChapter();
+    if (document.activeElement !== els.gotoInput) els.gotoInput.value = reader.page;
+  }
 });
 reader.zoom = load('zoom', 1);
 const detector = new GestureDetector({ sensitivity: settings.sensitivity, swapDirection: settings.swap });
@@ -152,7 +155,7 @@ els.keepRecent.addEventListener('change', async () => {
 });
 
 // The panel is a popover: the browser handles opening, Escape and clicking outside.
-for (const [panel, button] of [[els.settings, els.settingsBtn], [els.toc, els.tocBtn], [els.recent, els.recentBtn]]) {
+for (const [panel, button] of [[els.settings, els.settingsBtn], [els.recent, els.recentBtn]]) {
   panel.addEventListener('toggle', (e) => button.setAttribute('aria-expanded', String(e.newState === 'open')));
 }
 
@@ -200,6 +203,8 @@ async function openFile(file) {
     els.gotoInput.max = reader.pageCount;
     els.tocTree.replaceChildren();
     els.tocEmpty.hidden = true;
+    if (tocOpen) fillToc();
+    else if (load('toc-open', false) && !phone()) setTocOpen(true, { focus: false, remember: false });
     updateZoomControls();
     setStatus(gestureState === 'on' ? 'Swipe to turn the page' : '');
     if (settings.recent) keepBook(file).then(refreshRecent);
@@ -280,12 +285,12 @@ document.addEventListener('keydown', (e) => {
   if (!els.help.hidden) return; // the how-to card handles its own keys
   if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
   // Inside a panel, these keys belong to its buttons and lists.
-  if (e.target.closest?.('.panel') && [' ', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+  if (e.target.closest?.('.panel, .sidebar') && [' ', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
   if (reader.doc && ['+', '='].includes(e.key)) { zoomBy(1); return; }
   if (reader.doc && ['-', '_'].includes(e.key)) { zoomBy(-1); return; }
   if (reader.doc && e.key === '0') { setZoom(1); return; }
   if (reader.doc && (e.key === 'f' || e.key === 'F')) { toggleFullscreen(); return; }
-  if (reader.doc && (e.key === 'c' || e.key === 'C')) { els.toc.togglePopover(); return; }
+  if (reader.doc && (e.key === 'c' || e.key === 'C')) { setTocOpen(!tocOpen); return; }
   if (['ArrowRight', 'PageDown', ' '].includes(e.key)) {
     e.preventDefault();
     turn('next');
@@ -574,24 +579,52 @@ function markCurrentChapter(scroll = false) {
   if (scroll) current.link.scrollIntoView({ block: 'center' });
 }
 
-els.toc.addEventListener('toggle', async (e) => {
-  if (e.newState !== 'open') return;
+// The sidebar remembers whether it was open, like the camera window.
+let tocOpen = false;
+const phone = () => window.matchMedia('(max-width: 720px)').matches;
+
+async function fillToc() {
+  if (els.tocTree.firstChild || !reader.doc) return;
+  const outline = await reader.loadOutline();
+  tocLinks = [];
+  if (outline.length) els.tocTree.replaceChildren(buildToc(outline));
+  els.tocEmpty.hidden = outline.length > 0;
+  markCurrentChapter(true);
+}
+
+async function setTocOpen(open, { focus = open, remember = true } = {}) {
+  tocOpen = open;
+  els.toc.classList.toggle('open', open);
+  els.toc.inert = !open;
+  els.tocBtn.setAttribute('aria-expanded', String(open));
+  els.pageBtn.setAttribute('aria-expanded', String(open));
+  if (remember) save('toc-open', open);
+  if (!open) {
+    if (els.toc.contains(document.activeElement)) els.tocBtn.focus();
+    return;
+  }
   els.gotoInput.value = reader.page;
   els.gotoInput.removeAttribute('aria-invalid');
-  if (!els.tocTree.firstChild && reader.doc) {
-    const outline = await reader.loadOutline();
-    tocLinks = [];
-    if (outline.length) els.tocTree.replaceChildren(buildToc(outline));
-    els.tocEmpty.hidden = outline.length > 0;
-  }
+  await fillToc();
   markCurrentChapter(true);
-  els.gotoInput.focus();
-  els.gotoInput.select();
+  if (focus) {
+    els.gotoInput.focus({ preventScroll: true });
+    els.gotoInput.select();
+  }
+}
+
+els.tocBtn.addEventListener('click', () => setTocOpen(!tocOpen, { focus: false }));
+els.pageBtn.addEventListener('click', () => setTocOpen(true));
+$('toc-close').addEventListener('click', () => setTocOpen(false));
+els.toc.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') setTocOpen(false);
 });
+// On a phone the contents cover the book, so a tap on the book closes them.
+els.stage.addEventListener('pointerdown', () => { if (tocOpen && phone()) setTocOpen(false, { remember: false }); });
 
 async function jumpTo(page) {
   if (!page) return;
-  els.toc.hidePopover();
+  if (phone()) setTocOpen(false, { remember: false });
   const moved = await reader.goTo(page);
   if (moved) {
     hideResume();
