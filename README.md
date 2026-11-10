@@ -48,7 +48,7 @@ Everything runs in your browser. Hand tracking uses Google's MediaPipe gesture r
 6. Two-page spread and remembering the last page of each book
 7. Testing across lighting, distance and either hand, plus a first-run how-to
 
-**Phase 2: Kindle.** A Chrome extension that reuses the same gesture detector (`js/gestures.js`) to turn pages in Kindle Cloud Reader. A physical Kindle can't be controlled from a laptop alone, so it's out of scope.
+**Phase 2: Kindle.** A Chrome extension, in `kindle-extension/`, that reuses the same gesture code to turn pages in Kindle Cloud Reader. See [kindle-extension/README.md](kindle-extension/README.md) to install it. A physical Kindle can't be controlled from a laptop alone, so it's out of scope.
 
 ## Run it locally
 
@@ -56,7 +56,8 @@ The camera only works over `https://` or on `localhost`, so serve the folder ins
 
 ```sh
 npm start          # serves on http://localhost:8000
-npm test           # runs the gesture detector tests
+npm test           # runs the gesture detector and extension tests
+npm run sync:extension   # copies the shared code into the Kindle extension
 ```
 
 ## Project layout
@@ -71,6 +72,8 @@ npm test           # runs the gesture detector tests
 | `js/feedback.js` | Page-turn sound and flash |
 | `vendor/` | PDF.js 4.4.168 (Apache-2.0) and MediaPipe Tasks Vision 0.10.14 (Apache-2.0) |
 | `models/gesture_recognizer.task` | MediaPipe's gesture recogniser model (Apache-2.0) |
+| `kindle-extension/` | The Chrome extension for Kindle Cloud Reader (phase 2) |
+| `scripts/sync-extension.mjs` | Copies the shared code into the extension |
 
 ## Testing new versions
 

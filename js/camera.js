@@ -8,8 +8,12 @@ const MODEL = new URL('../models/gesture_recognizer.task', import.meta.url).href
 
 export class HandCamera {
   // onFrame({ t, landmarks, gesture, score }) is called for every processed frame.
-  constructor(video, overlay, onFrame) {
+  // options.schedule replaces requestAnimationFrame, for pages that are never
+  // shown on screen (like the Kindle extension's hidden camera page), where
+  // animation frames don't fire.
+  constructor(video, overlay, onFrame, options = {}) {
     this.video = video;
+    this.schedule = options.schedule || ((fn) => requestAnimationFrame(fn));
     this.overlay = overlay;
     this.onFrame = onFrame;
     this.recognizer = null;
@@ -80,7 +84,7 @@ export class HandCamera {
         score: top?.score || 0,
       });
     }
-    requestAnimationFrame(() => this.loop());
+    this.schedule(() => this.loop());
   }
 
   draw(landmarks) {

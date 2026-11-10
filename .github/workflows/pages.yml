@@ -57,7 +57,7 @@ jobs:
           sed -i 's#<title>Turn the page</title>#<title>PREVIEW · Turn the page</title>#; s#<div class="brand">Turn the page</div>#<div class="brand">Turn the page <span style="color:\#d97706">· preview</span></div>#' site/preview/index.html
 
       - name: Leave out files the site doesn't need
-        run: rm -rf site/.git site/.github site/.claude site/tests
+        run: rm -rf site/.git site/.github site/.claude site/tests site/scripts site/kindle-extension
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
