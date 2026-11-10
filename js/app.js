@@ -3,6 +3,7 @@ import { HandCamera } from './camera.js';
 import { GestureDetector, palmCentre } from './gestures.js';
 import { HandWatch, WARNINGS } from './handwatch.js';
 import { PinchGrab } from './pinch.js';
+import { flipTurn } from './flip.js';
 import { bookId, listBooks, getBook, rememberBook, updateBook, forgetBook, forgetAll } from './library.js';
 import { playTurnSound, flashEdge } from './feedback.js';
 import { load, save } from './storage.js';
@@ -65,6 +66,7 @@ const els = {
   shelf: $('shelf'),
   shelfList: $('shelf-list'),
   keepRecent: $('opt-recent'),
+  pageFlip: $('opt-flip'),
   handWarning: $('hand-warning'),
   handWarningTitle: $('hand-warning-title'),
   handWarningTip: $('hand-warning-tip'),
@@ -80,6 +82,7 @@ const settings = {
   flash: true,
   preview: true,
   recent: true,
+  pageFlip: true,
   ...load('settings-v2', {}),
 };
 
@@ -117,6 +120,7 @@ function applySettings() {
   els.volume.style.setProperty('--fill', `${settings.volume * 100}%`);
   els.sensitivity.style.setProperty('--fill', `${((settings.sensitivity - 1) / 9) * 100}%`);
   els.flash.checked = settings.flash;
+  els.pageFlip.checked = settings.pageFlip;
   els.showPreview.checked = settings.preview;
   els.swap.checked = settings.swap;
   els.keepRecent.checked = settings.recent;
@@ -148,6 +152,7 @@ els.volume.addEventListener('input', () => updateSetting('volume', Number(els.vo
 els.volume.addEventListener('change', () => playTurnSound('next', settings.volume));
 els.sound.addEventListener('change', () => updateSetting('sound', els.sound.checked));
 els.flash.addEventListener('change', () => updateSetting('flash', els.flash.checked));
+els.pageFlip.addEventListener('change', () => updateSetting('pageFlip', els.pageFlip.checked));
 els.showPreview.addEventListener('change', () => updateSetting('preview', els.showPreview.checked));
 els.keepRecent.addEventListener('change', async () => {
   updateSetting('recent', els.keepRecent.checked);
@@ -185,6 +190,7 @@ if (!load('seen-help', false)) showHelp(true);
 
 // ---------- Opening files ----------
 let currentFile = null;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const bookTitle = (name) => name.replace(/\.pdf$/i, '');
 
 async function openFile(file) {
@@ -213,7 +219,9 @@ async function openFile(file) {
   } catch (err) {
     console.error(err);
     if (!reader.doc) els.empty.hidden = false;
-    setStatus('Couldn\'t open that PDF.');
+    setStatus(err?.name === 'PasswordException'
+      ? 'That PDF is password-protected, which this reader can\'t open yet.'
+      : 'Couldn\'t open that PDF. The file may be damaged or not a real PDF.');
   }
 }
 
@@ -272,7 +280,11 @@ async function turn(direction) {
     if (!els.resume.hidden) hideResume();
     return;
   }
-  const moved = direction === 'next' ? await reader.next() : await reader.prev();
+  const go = () => (direction === 'next' ? reader.next() : reader.prev());
+  const animate = settings.pageFlip && reader.zoom === 1 && !reduceMotion.matches;
+  const moved = animate
+    ? await flipTurn({ stage: els.stage, pages: els.pages, direction, render: go })
+    : await go();
   if (!moved) return;
   if (!els.resume.hidden) hideResume();
   if (settings.sound) playTurnSound(direction, settings.volume);

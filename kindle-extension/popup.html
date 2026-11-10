@@ -28,27 +28,27 @@
   <section>
     <h2>Gestures</h2>
     <label class="field">
-      <span class="field-label">Sensitivity <output id="sensitivity-value">5</output></span>
+      <span class="field-label">Swipe sensitivity <output id="sensitivity-value">5</output></span>
       <input id="sensitivity" type="range" min="1" max="10" step="1">
-      <span class="range-ends"><span>Big swipes</span><span>Small flicks</span></span>
+      <span class="range-ends"><span>Long swipe</span><span>Short swipe</span></span>
     </label>
     <fieldset class="field">
-      <legend class="field-label">Next page</legend>
+      <legend class="field-label">Next page when you swipe</legend>
       <div class="segmented">
-        <label><input type="radio" name="dir" id="dir-rtl" value="rtl"><span>Swipe right to left</span></label>
-        <label><input type="radio" name="dir" id="dir-ltr" value="ltr"><span>Swipe left to right</span></label>
+        <label><input type="radio" name="dir" id="dir-rtl" value="rtl"><span>Right to left</span></label>
+        <label><input type="radio" name="dir" id="dir-ltr" value="ltr"><span>Left to right</span></label>
       </div>
     </fieldset>
   </section>
 
   <section>
-    <h2>Feedback</h2>
+    <h2>Page-turn feedback</h2>
     <label class="field">
-      <span class="field-label">Page-turn sound <output id="volume-value"></output></span>
+      <span class="field-label">Sound <output id="volume-value"></output></span>
       <input id="volume" type="range" min="0" max="1" step="0.1">
     </label>
-    <label class="check"><input id="flash" type="checkbox"> Flash the edge on each turn</label>
-    <label class="check"><input id="preview" type="checkbox"> Show my hand in the corner</label>
+    <label class="check"><input id="flash" type="checkbox"> Edge flash on each turn</label>
+    <label class="check"><input id="preview" type="checkbox"> Camera preview (your hand in the corner)</label>
   </section>
 
   <section>

@@ -239,6 +239,15 @@
       .fold svg { width: 16px; height: 16px; transition: transform .32s var(--ease-out); }
       .dock.min .fold svg { transform: rotate(180deg); }
 
+      /* Which way the last gesture was read, as in the PDF reader */
+      .hint {
+        position: absolute; left: 50%; bottom: 10px; padding: 3px 10px; border-radius: 999px;
+        background: rgba(0,0,0,.6); color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap;
+        opacity: 0; transform: translate(-50%, 4px);
+        transition: opacity .15s, transform .2s var(--ease-out);
+      }
+      .hint.show { opacity: 1; transform: translate(-50%, 0); }
+
       /* "Can't see your hand": a note just above the card (or its folded pill) */
       .warn {
         position: absolute; right: 0; bottom: calc(100% + 8px);
@@ -289,6 +298,7 @@
       <div class="card">
         <div class="view">
           <canvas width="376" height="282"></canvas>
+          <div class="hint" aria-hidden="true"></div>
           <div class="empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
             <span>Hold up an open hand</span>
@@ -312,6 +322,8 @@
   const text = root.querySelector('.text');
   const fold = root.querySelector('.fold');
   const warn = root.querySelector('.warn');
+  const hint = root.querySelector('.hint');
+  let hintTimer = null;
   const edges = { next: root.querySelector('.edge.right'), prev: root.querySelector('.edge.left') };
 
   let settings = { flash: true, preview: true, swap: false };
@@ -411,6 +423,13 @@
     }
   }
 
+  function showHint(dir) {
+    hint.textContent = dir === 'next' ? '← Next' : 'Previous →';
+    hint.classList.add('show');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => hint.classList.remove('show'), 900);
+  }
+
   function flash(dir) {
     dot.classList.remove('turn');
     void dot.offsetWidth;
@@ -427,6 +446,7 @@
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     if (msg.type === 'turn') {
       flash(msg.dir);
+      if (!msg.test) showHint(msg.dir);
       turn(msg.dir).then(reply);
       return true;
     }

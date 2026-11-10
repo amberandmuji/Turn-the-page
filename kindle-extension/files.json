@@ -1,9 +1,9 @@
 {
-  "version": "8e90414",
+  "version": "48a98ea",
   "files": {
     "README.md": "62fe5ca63f3d928c3d56e0bb7941ac6cb18d9fc9a4f45c21301509a1afabcf69",
     "background.js": "02c92c33ea44579ae645eb5327054c73e895759f008dde019cd7b2806e946412",
-    "content.js": "4db51c8e2b10f1019ecfdc87e4093dadf01ccae5f8ee84958faa9d664bdb75cf",
+    "content.js": "9bc06f3c578b792552000999c4001efbfbe9cea8378f39c3ff4f158187c40611",
     "icons/icon128.png": "7377a719c2a9f861e0c33ebf0b51071ab324a1cbeef1e9ff20b85289d0c69072",
     "icons/icon16.png": "8d2f992cac20753040f06443ebd178edb653c9727e2bf47d66d5330cab0b8b38",
     "icons/icon32.png": "49c801c93320448903c160d5e5f6013be42de458655ec62335754198d321b436",
@@ -11,9 +11,9 @@
     "manifest.json": "d0ba65944446d812fe579588f15020262b152cc15b5da17028f7901bc75c37d1",
     "offscreen.html": "2eaa582878b416ff5a3cec0c188bf216cbd42a523f99f0b7de6489bebbfebbe3",
     "offscreen.js": "4ec05c1ba223bc6e13d8b979064476ab446f16bada6ff2b1703ff52c994e2d50",
-    "popup.html": "4a50f08333e7b348c6d37577bdc3920bdabfcad0f41fe0d1d319f7fe814627a8",
+    "popup.html": "d344b77cb6e001a67387bed5b47144639194319abd8b24286346769b9a8e8f0a",
     "popup.js": "5901a5b983e14d5464d582e43902d038c0a831329a6d476375c1ed3d3eac0363",
-    "settings.js": "923aff39aed0e9da930d67c1bfc85edd6e48fcef1890b1ae4ce299f1f5eac5d8",
+    "settings.js": "dc2400a9298deb0a9bb22dc698b4280b0c8a7d1c27a6773bfecc5522ebdd7ef4",
     "setup.html": "e9d8ee1aed8c4fd33905922f39cd5787bf91f7e2d9761264f15b0635438a67be",
     "setup.js": "501c0a8e5e95a05f9eece36995fadee87c8f0c45ac7b76e915d09c5b4d16764c",
     "shared/js/camera.js": "138de1edf081e1ef2d8b9b419227cc94e87197f8086be53600c974f274afff96",

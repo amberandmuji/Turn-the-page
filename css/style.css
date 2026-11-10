@@ -814,6 +814,36 @@ body:has(.page-label:empty) .toc-btn { display: none; }
   border-color: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
+/* Page-turn animation (js/flip.js): pictures of the pages, and one leaf
+   that turns over the spine. */
+.flip {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  perspective: 2400px;
+}
+.flip-cover, .flip-leaf { position: absolute; }
+.flip canvas { display: block; width: 100%; height: 100%; }
+.flip-cover { box-shadow: var(--page-shadow); border-radius: 2px; overflow: hidden; }
+.flip-leaf { transform-style: preserve-3d; will-change: transform; }
+.flip-side {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: var(--page-shadow);
+  backface-visibility: hidden;
+}
+.flip-side.back { transform: rotateY(180deg); }
+.flip-shade {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(to right, rgba(31, 35, 40, 0.45), rgba(31, 35, 40, 0.12) 60%, rgba(31, 35, 40, 0.3));
+}
+
 /* Edge flash on page turn */
 .stage::after {
   content: "";
