@@ -1,5 +1,5 @@
 {
-  "version": "0698435",
+  "version": "8e90414",
   "files": {
     "README.md": "62fe5ca63f3d928c3d56e0bb7941ac6cb18d9fc9a4f45c21301509a1afabcf69",
     "background.js": "02c92c33ea44579ae645eb5327054c73e895759f008dde019cd7b2806e946412",
@@ -18,7 +18,7 @@
     "setup.js": "501c0a8e5e95a05f9eece36995fadee87c8f0c45ac7b76e915d09c5b4d16764c",
     "shared/js/camera.js": "138de1edf081e1ef2d8b9b419227cc94e87197f8086be53600c974f274afff96",
     "shared/js/feedback.js": "3b0d3462bdb640a93efc29408525c57d00cd4279dccdc1037ac7f46d341b8b25",
-    "shared/js/gestures.js": "b3cf8dca163bce77ee2a770ed6f8d257c8a98b7e222545fd657a8333de77fd1e",
+    "shared/js/gestures.js": "38e8db9d53a3790f468ac36ee85f6869e82bc5a64e48290f67f3592c47813f2b",
     "shared/js/handwatch.js": "28f570f65b14ccee215c56bc438693a83c8f053e6b350fbe33aad669da00050b",
     "shared/models/gesture_recognizer.task": "97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482",
     "shared/vendor/mediapipe/vision_bundle.mjs": "e77f281f9619150d937023c355bae170e9120e3b9e43f1e23a2a7bee07197669",

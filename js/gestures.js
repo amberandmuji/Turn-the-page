@@ -45,6 +45,9 @@ export const DEFAULTS = {
   fistMinScore: 0.6,    // how sure the recogniser must be that it sees a fist
   maxSlope: 0.7,        // vertical movement allowed per unit of horizontal movement
   steadyMs: 250,        // the hand must be still this long before a swipe up or down
+  steadyRadius: 0.035,  // ... staying within this share of the frame (hand tracking jitters)
+  armMs: 350,           // a swipe up or down may start this long after the hand was last still
+  velocityMs: 100,      // up/down speed is measured over this long, to smooth out jitter
   verticalScale: 0.8,   // a vertical swipe needs this share of a sideways swipe's distance
 };
 
@@ -82,7 +85,8 @@ export class GestureDetector {
     this.fistSince = null;
     this.vstroke = null;     // vertical stroke in progress
     this.lastVStroke = null; // { dir, endT } of the last vertical stroke that fired
-    this.steadySince = null; // when the hand last came to rest in view
+    this.trail = [];         // recent smoothed positions { t, x, y }, for up and down
+    this.steadyAt = -Infinity; // last time the hand had been still for steadyMs
   }
 
   // 0..1 progress towards a pause, for the on-screen indicator.
@@ -102,7 +106,7 @@ export class GestureDetector {
         this.endStroke(this.last.t);
         this.endVStroke(this.last.t, false);
         this.last = null;
-        this.steadySince = null;
+        this.trail = [];
       }
       this.fistSince = null;
       return null;
@@ -113,7 +117,7 @@ export class GestureDetector {
       this.endStroke(t);
       this.endVStroke(t, false);
       this.last = null;
-      this.steadySince = null;
+      this.trail = [];
       if (this.fistSince === null) this.fistSince = t;
       if (t - this.fistSince >= o.fistHoldMs) {
         this.fistSince = null;
@@ -127,7 +131,7 @@ export class GestureDetector {
       this.endStroke(this.last ? this.last.t : t);
       this.endVStroke(this.last ? this.last.t : t, false);
       this.last = { t, x: hand.x, y: hand.y };
-      this.steadySince = null;
+      this.trail = [];
       return null;
     }
 
@@ -140,7 +144,7 @@ export class GestureDetector {
     const vy = dy / dt;
     this.last = cur;
 
-    const vertical = this.vertical(t, vx, vy, dx, dy);
+    const vertical = this.vertical(cur);
     if (vertical) return vertical;
 
     const dir = Math.sign(vx);
@@ -179,14 +183,30 @@ export class GestureDetector {
   }
 
   // Tracks up and down strokes. Returns 'up', 'down' or null.
-  vertical(t, vx, vy, dx, dy) {
+  //
+  // Hand tracking jitters by a few thousandths of the frame on every frame,
+  // which is as fast as a slow hand, so up and down use steadier measures
+  // than sideways swipes do: the hand counts as still while it stays inside
+  // a small circle, and speed is measured across about 100 ms.
+  vertical(cur) {
     const o = this.opts;
-    const steadyFor = this.steadySince === null ? 0 : t - this.steadySince;
-    if (Math.hypot(vx, vy) < o.endSpeed) {
-      if (this.steadySince === null) this.steadySince = t;
-    } else {
-      this.steadySince = null;
+    const { t } = cur;
+    this.trail.push(cur);
+    while (this.trail.length && t - this.trail[0].t > Math.max(o.steadyMs, o.velocityMs) + 200) this.trail.shift();
+
+    // Still: every point of the last steadyMs within steadyRadius of their middle.
+    const recent = this.trail.filter((p) => t - p.t <= o.steadyMs);
+    if (recent.length >= 3 && t - recent[0].t >= o.steadyMs * 0.8) {
+      const mx = recent.reduce((a, p) => a + p.x, 0) / recent.length;
+      const my = recent.reduce((a, p) => a + p.y, 0) / recent.length;
+      if (recent.every((p) => Math.hypot(p.x - mx, p.y - my) <= o.steadyRadius)) this.steadyAt = t;
     }
+
+    // Velocity across velocityMs.
+    const old = this.trail.find((p) => t - p.t <= o.velocityMs) || this.trail[0];
+    const span = Math.max(1, t - old.t) / 1000;
+    const vx = old === cur ? 0 : (cur.x - old.x) / span;
+    const vy = old === cur ? 0 : (cur.y - old.y) / span;
 
     const dir = Math.sign(vy);
     const speed = Math.abs(vy);
@@ -202,16 +222,18 @@ export class GestureDetector {
         && this.lastVStroke.dir !== dir
         && t - this.lastVStroke.endT < o.returnMs;
       const afterTurn = t - this.lastTurnAt < o.returnMs;
+      // Measured from where the hand was when it began to speed up.
       this.vstroke = {
-        dir, dy: 0, dx: 0, peak: 0, ready: false, fired: false,
-        armed: steadyFor >= o.steadyMs && !isReturn && !afterTurn,
+        dir, from: old, dy: 0, dx: 0, peak: 0, ready: false, fired: false,
+        armed: t - this.steadyAt <= o.armMs && !isReturn && !afterTurn,
       };
     }
 
     const s = this.vstroke;
     if (s) {
-      s.dy += dy;
-      s.dx += Math.abs(dx);
+      // Overall distance, not frame-by-frame, so jitter doesn't add up.
+      s.dy = cur.y - s.from.y;
+      s.dx = Math.abs(cur.x - s.from.x);
       s.peak = Math.max(s.peak, speed);
       s.ready = s.armed
         && Math.abs(s.dy) >= swipeDistance(o.sensitivity) * o.verticalScale

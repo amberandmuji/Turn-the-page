@@ -171,3 +171,26 @@ test('a sideways swipe never counts as up or down', () => {
 test('a slow drift down does not fold', () => {
   assert.deepEqual(play(new GestureDetector(), [{ hold: 400 }, vmove(0.7, 2000), { hold: 200 }], { x: 0.5, y: 0.3 }), []);
 });
+
+// Real hand tracking jitters by a few thousandths of the frame every frame.
+// Up and down used to fail under that; these replay the same swipes with
+// jitter added.
+function jittery(det, amount = 0.006) {
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  return {
+    update: (f) => det.update(f.hand ? { ...f, hand: { x: f.hand.x + rnd() * amount, y: f.hand.y + rnd() * amount } } : f),
+  };
+}
+
+test('with tracking jitter, holding still then swiping down folds', () => {
+  assert.deepEqual(play(jittery(new GestureDetector()), [{ hold: 400 }, vmove(0.7, 300), { hold: 300 }], { x: 0.5, y: 0.35 }), ['down']);
+});
+
+test('with tracking jitter, holding still then swiping up opens', () => {
+  assert.deepEqual(play(jittery(new GestureDetector()), [{ hold: 400 }, vmove(0.35, 300), { hold: 300 }], { x: 0.5, y: 0.7 }), ['up']);
+});
+
+test('with tracking jitter, a hand held still does nothing', () => {
+  assert.deepEqual(play(jittery(new GestureDetector()), [{ hold: 5000 }], { x: 0.5, y: 0.5 }), []);
+});
