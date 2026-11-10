@@ -1,0 +1,31 @@
+{
+  "version": "3ac5ce7",
+  "files": {
+    "README.md": "baf5cf34d28921f41b7d0215e6359160f66b36585916860ef040211933359d13",
+    "background.js": "c44c19f81e762f6007f595c318302a72c5b151d4f897e843632cd57ee161bb48",
+    "content.js": "a46867e014b02cd9483a62aa8e1e8e95fe14f5637c1efc68edc53897f886ab13",
+    "icons/icon128.png": "7377a719c2a9f861e0c33ebf0b51071ab324a1cbeef1e9ff20b85289d0c69072",
+    "icons/icon16.png": "8d2f992cac20753040f06443ebd178edb653c9727e2bf47d66d5330cab0b8b38",
+    "icons/icon32.png": "49c801c93320448903c160d5e5f6013be42de458655ec62335754198d321b436",
+    "icons/icon48.png": "84e3d3d4cc0e44c2d20e943ed6e90e1b7c125ee49b3655ed00394163571db34a",
+    "manifest.json": "d0ba65944446d812fe579588f15020262b152cc15b5da17028f7901bc75c37d1",
+    "offscreen.html": "2eaa582878b416ff5a3cec0c188bf216cbd42a523f99f0b7de6489bebbfebbe3",
+    "offscreen.js": "0feb494b0b3873b5eeea1f57940d2b9da30737be528d5eeb02a621fc4a393ddf",
+    "popup.html": "2d697b2e3b88abf3839ed75110bb763db90099f00bd20d492ddbde50b8ba2e96",
+    "popup.js": "5901a5b983e14d5464d582e43902d038c0a831329a6d476375c1ed3d3eac0363",
+    "settings.js": "923aff39aed0e9da930d67c1bfc85edd6e48fcef1890b1ae4ce299f1f5eac5d8",
+    "setup.html": "e9d8ee1aed8c4fd33905922f39cd5787bf91f7e2d9761264f15b0635438a67be",
+    "setup.js": "501c0a8e5e95a05f9eece36995fadee87c8f0c45ac7b76e915d09c5b4d16764c",
+    "shared/js/camera.js": "d751427f29478342fb00139d63222f4e73c48615faeb48e53684c9dbd7e025fd",
+    "shared/js/feedback.js": "3b0d3462bdb640a93efc29408525c57d00cd4279dccdc1037ac7f46d341b8b25",
+    "shared/js/gestures.js": "205f7d69e113d27026a291063341c2b653e629453a4c7a5cb823f8babba26bfb",
+    "shared/models/gesture_recognizer.task": "97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482",
+    "shared/vendor/mediapipe/vision_bundle.mjs": "e77f281f9619150d937023c355bae170e9120e3b9e43f1e23a2a7bee07197669",
+    "shared/vendor/mediapipe/wasm/vision_wasm_internal.js": "9440cf0cc0cea21800e31581ec32aeedcc5fbf9df4509796bbc7d3f99e52ab9c",
+    "shared/vendor/mediapipe/wasm/vision_wasm_internal.wasm": "f82a8e6c05e08a44cc9f9e7ec5f845935bcbb1b1500ebe8c2f4812fb4e2917dc",
+    "ui.css": "c76d97405de189ead3d114930928fb761b986d9524458fe2f48f9ca6ea17daea",
+    "update.html": "862c6b9494ad46636ed10d2a2d26f2c43737d00c8b9fa8da4570747088221cc4",
+    "update.js": "4892bc71c8640605a8d9d8bb794e1767a92959e0f58d9703e6ba5886e51ea0e8",
+    "updates.js": "de98c467a8a309e08595879eb8fda4730eff8c3ffc1296a1c18f684f6caba817"
+  }
+}

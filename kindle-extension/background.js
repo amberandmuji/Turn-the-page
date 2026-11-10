@@ -211,3 +211,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, change) => {
 
 // A fresh browser session never starts with the camera on.
 chrome.runtime.onStartup.addListener(() => closeOffscreen());
+
+// After an update, Kindle tabs still run the old page script, which can no
+// longer talk to the extension. Reload them so the new one takes over.
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== 'update') return;
+  await chrome.storage.session.set({ state: { mode: 'off', tabId: null } });
+  const patterns = chrome.runtime.getManifest().content_scripts[0].matches;
+  for (const tab of await chrome.tabs.query({ url: patterns })) chrome.tabs.reload(tab.id);
+});

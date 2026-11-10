@@ -18,7 +18,7 @@
   </div>
 
   <button id="toggle" class="primary" type="button">Start gestures</button>
-  <p class="hint">Shortcut: <kbd>Alt</kbd> + <kbd>G</kbd> on the Kindle tab</p>
+  <p class="hint"><kbd>Alt</kbd> + <kbd>G</kbd> starts and stops · hold a fist to pause</p>
 
   <div id="not-kindle" class="notice" hidden>
     <p>Open a book in Kindle Cloud Reader, then start gestures from there.</p>
@@ -39,7 +39,6 @@
         <label><input type="radio" name="dir" id="dir-ltr" value="ltr"><span>Swipe left to right</span></label>
       </div>
     </fieldset>
-    <p class="muted small">Hold a fist for a second to pause. The camera turns off.</p>
   </section>
 
   <section>
@@ -54,7 +53,6 @@
 
   <section>
     <h2>Check page turning</h2>
-    <p class="muted small">Turns the Kindle page without the camera, to check the extension can reach it.</p>
     <div class="row">
       <button id="test-prev" type="button">‹ Previous</button>
       <button id="test-next" type="button">Next ›</button>
@@ -62,7 +60,10 @@
     <p id="test-result" class="muted small" role="status"></p>
   </section>
 
-  <footer>Everything runs on this computer. No video leaves it.</footer>
+  <footer>
+    <p>Runs on this computer. No video leaves it.</p>
+    <p class="version"><span id="version"></span> · <button id="update" class="link" type="button">Check for updates</button></p>
+  </footer>
   <script type="module" src="popup.js"></script>
 </body>
 </html>

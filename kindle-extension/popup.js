@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, isKindleUrl } from './settings.js';
+import { checkForUpdate, installedList } from './updates.js';
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -88,3 +89,19 @@ chrome.storage.session.onChanged.addListener((changes) => {
 [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 ({ state, settings } = await chrome.runtime.sendMessage({ type: 'get-state' }));
 render();
+
+// Version, and a quiet check for a newer one.
+const openUpdater = () => chrome.tabs.create({ url: 'update.html' });
+$('update').addEventListener('click', openUpdater);
+installedList().then(async (installed) => {
+  const { justUpdated } = await chrome.storage.local.get('justUpdated');
+  $('version').textContent = justUpdated === installed.version
+    ? `Updated to version ${installed.version}`
+    : `Version ${installed.version}`;
+  if (justUpdated) chrome.storage.local.remove('justUpdated');
+  const update = await checkForUpdate();
+  if (update.available) {
+    $('update').textContent = 'Update available';
+    $('update').classList.add('available');
+  }
+}).catch(() => {});

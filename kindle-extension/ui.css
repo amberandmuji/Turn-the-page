@@ -109,7 +109,7 @@ kbd {
 }
 .notice a { display: inline-block; margin-top: 4px; color: var(--accent-text); font-weight: 600; }
 
-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
 h2 {
   font-size: 11.5px;
   font-weight: 650;
@@ -119,7 +119,7 @@ h2 {
   margin-bottom: 8px;
 }
 
-.field { display: block; border: 0; padding: 0; margin: 0 0 10px; min-width: 0; }
+.field { display: block; border: 0; padding: 0; margin: 0 0 8px; min-width: 0; }
 .field-label { display: flex; justify-content: space-between; margin-bottom: 4px; padding: 0; }
 .field-label output { color: var(--muted); font-variant-numeric: tabular-nums; }
 input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent-strong); }
@@ -151,7 +151,13 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent-strong)
 .row { display: flex; gap: 8px; margin: 8px 0 4px; }
 .row button { flex: 1; }
 
-footer { margin-top: 14px; color: var(--muted); font-size: 12px; text-align: center; }
+footer { margin-top: 14px; color: var(--muted); font-size: 12px; text-align: center; display: grid; gap: 4px; }
+button.link {
+  all: unset; cursor: pointer; color: var(--accent-text); text-decoration: underline;
+  text-underline-offset: 2px;
+}
+button.link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+button.link.available { font-weight: 650; text-decoration: none; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); }
 
 /* --- setup page ---------------------------------------------------------- */
 
