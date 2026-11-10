@@ -177,15 +177,15 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .brand-mark { width: 22px; height: 22px; }
 .brand-mark rect:first-child { fill: var(--accent); }
 .brand-mark rect:last-child { fill: #7dd3fc; }
-.nav, .actions { display: flex; align-items: center; gap: 8px; }
-@media (max-width: 1240px) {
-  .toolbar { grid-template-columns: auto 1fr auto; }
-  .nav { justify-self: center; }
-}
-@media (max-width: 1040px) {
+/* Three zones, left to right: your books, where you are in this one, and
+   the hands-free controls. How the page is shown (zoom, full screen) lives
+   in the bar at the bottom. */
+.library, .nav, .actions { display: flex; align-items: center; gap: 8px; }
+.library { gap: 20px; min-width: 0; }
+@media (max-width: 1000px) {
   .brand-text { display: none; }
 }
-@media (max-width: 900px) {
+@media (max-width: 860px) {
   #open-btn { width: var(--control-h); padding: 0; }
   #open-btn .btn-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .gesture-btn { min-width: 0; }
@@ -210,12 +210,6 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   font-variant-numeric: tabular-nums;
   transition: color 120ms;
 }
-.nav-sep {
-  width: 1px;
-  height: 20px;
-  margin: 0 6px;
-  background: var(--border);
-}
 .nav #toc-btn[aria-expanded="true"] { color: var(--accent-text); background: var(--accent-soft); }
 
 /* Zoom: out, the level (click for "fit"), in */
@@ -232,9 +226,9 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 }
 .zoom-label:hover:not(:disabled) { color: var(--text); }
 .zoom-label.zoomed { color: var(--accent-text); }
-.nav .fs-exit { display: none; }
-.nav #fullscreen-btn[aria-pressed="true"] .fs-enter { display: none; }
-.nav #fullscreen-btn[aria-pressed="true"] .fs-exit { display: block; }
+.view .fs-exit { display: none; }
+.view #fullscreen-btn[aria-pressed="true"] .fs-enter { display: none; }
+.view #fullscreen-btn[aria-pressed="true"] .fs-exit { display: block; }
 
 /* Open PDF, with an arrow for recent books joined on when there are some */
 .split { display: flex; }
@@ -285,7 +279,7 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 
 /* Contents: go to a page, then the PDF's own chapters */
 .panel.toc {
-  inset: 60px auto auto 16px;
+  inset: 60px auto auto max(16px, calc(50% - 180px)); /* under the page number */
   width: 360px;
   flex-direction: column;
   padding-bottom: 0;
@@ -356,7 +350,7 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 .toc-empty { margin: 0; padding: 16px 20px 20px; color: var(--muted); font-size: 14px; }
 
 /* Recent books, in the panel and on the start screen */
-.panel.recent { padding-bottom: 12px; }
+.panel.recent { inset: 60px auto auto 16px; padding-bottom: 12px; } /* under Open PDF */
 .book-list { list-style: none; margin: 0; padding: 4px 8px; }
 .book {
   position: relative;
@@ -801,8 +795,20 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
+.status-text { min-width: 0; }
 .statusbar .privacy { display: inline-flex; align-items: center; gap: 6px; }
 .statusbar .privacy .icon { width: 14px; height: 14px; }
+/* The privacy promise fills the bar whenever there's nothing else to say. */
+.status-text:has(#status:not(:empty)) .privacy { display: none; }
+
+/* View controls: zoom and full screen, once a book is open */
+.view { display: flex; align-items: center; gap: 2px; margin-right: -8px; }
+body:has(.page-label:empty) .view { display: none; }
+.view .icon-btn, .view .zoom-label { min-height: 28px; height: 28px; border-color: transparent; background: transparent; }
+.view .icon-btn { width: 28px; }
+.view .icon { width: 16px; height: 16px; }
+.view .icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.view .zoom-label { min-width: 48px; font-size: 12.5px; }
 
 /* ---------- Camera preview ----------
    One card that folds into a small pill: a clip-path morph from the whole
@@ -976,19 +982,20 @@ button.large { min-height: 44px; padding: 0 22px; font-size: 16px; }
 /* ---------- Full screen ----------
    The toolbar floats over the book and slides away while you read; moving
    the mouse brings it back. The book keeps the whole screen either way. */
-body.fullscreen .statusbar { display: none; }
-body.fullscreen .toolbar {
+body.fullscreen .toolbar,
+body.fullscreen .statusbar {
   position: fixed;
-  inset: 0 0 auto 0;
+  left: 0;
+  right: 0;
   z-index: 4;
-  box-shadow: var(--raised-shadow);
-  transform: translateY(-100%);
   transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms;
 }
-body.fullscreen.chrome .toolbar { transform: none; }
+body.fullscreen .toolbar { top: 0; transform: translateY(-100%); box-shadow: var(--raised-shadow); }
+body.fullscreen .statusbar { bottom: 0; transform: translateY(100%); }
+body.fullscreen.chrome .toolbar,
+body.fullscreen.chrome .statusbar { transform: none; }
 body.fullscreen:not(.chrome) .toolbar { box-shadow: none; }
 body.fullscreen:not(.chrome) { cursor: none; }
-body.fullscreen .preview { bottom: 16px; }
 
 /* ---------- How-to dialog ---------- */
 .help {
@@ -1073,20 +1080,20 @@ kbd {
     padding: 8px 12px;
     row-gap: 6px;
   }
-  .brand { grid-area: brand; }
+  .library { grid-area: brand; gap: 12px; }
   .brand-text { display: none; }
   .nav { grid-area: nav; justify-content: center; }
   .nav:has(.page-label:empty) { display: none; }
   .nav { gap: 2px; }
-  .nav-sep { margin: 0 2px; }
   .page-btn { min-width: 0; }
-  .zoom-label { min-width: 44px; }
-  .statusbar:has(#status:empty) { display: none; }
+  /* Only when there's a message or a book to zoom */
+  body:has(.page-label:empty) .statusbar:has(#status:empty) { display: none; }
   .actions { grid-area: actions; gap: 6px; }
   .panel { inset: auto 8px 8px 8px; width: auto; max-height: calc(100dvh - 16px); }
   .panel::backdrop { background: rgba(15, 17, 20, 0.35); }
-  .panel.toc { inset: auto 8px 8px 8px; width: auto; }
+  .panel.toc, .panel.recent { inset: auto 8px 8px 8px; width: auto; }
   .statusbar .privacy { display: none; }
+  .status-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .preview-card { width: 168px; }
   .preview-text { font-size: 11.5px; }
   .hand-warning { max-width: calc(100vw - 32px); }

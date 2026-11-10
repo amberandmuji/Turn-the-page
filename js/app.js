@@ -484,7 +484,7 @@ function showChrome() {
   clearTimeout(chromeTimer);
   chromeTimer = setTimeout(() => {
     // Keep it up while the mouse is on it or a panel is open.
-    if (document.querySelector('.toolbar:hover, .panel:popover-open')) showChrome();
+    if (document.querySelector('.toolbar:hover, .statusbar:hover, .panel:popover-open')) showChrome();
     else document.body.classList.remove('chrome');
   }, 2500);
 }

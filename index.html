@@ -10,29 +10,23 @@
 </head>
 <body>
   <header class="toolbar">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="5" width="11" height="22" rx="2"/><rect x="17" y="5" width="11" height="22" rx="2"/></svg>
-      <span class="brand-text">Turn the page</span>
-    </div>
-    <div class="nav">
-      <button id="toc-btn" class="icon-btn" aria-label="Contents" aria-expanded="false" aria-controls="toc" popovertarget="toc" title="Contents and go to page (C)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1"/></svg></button>
-      <span class="nav-sep" aria-hidden="true"></span>
-      <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button id="page-btn" class="page-btn" popovertarget="toc" title="Go to a page"><span id="page-label" class="page-label" aria-live="polite"></span></button>
-      <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-      <span class="nav-sep" aria-hidden="true"></span>
-      <div class="zoom" role="group" aria-label="Zoom">
-        <button id="zoom-out" class="icon-btn" aria-label="Zoom out" title="Zoom out (−)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5"/></svg></button>
-        <button id="zoom-label" class="zoom-label" title="Fit the whole page in the window (0)">Fit</button>
-        <button id="zoom-in" class="icon-btn" aria-label="Zoom in" title="Zoom in (+)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5M11 8.5v5"/></svg></button>
+    <div class="library">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="5" width="11" height="22" rx="2"/><rect x="17" y="5" width="11" height="22" rx="2"/></svg>
+        <span class="brand-text">Turn the page</span>
       </div>
-      <button id="fullscreen-btn" class="icon-btn" aria-label="Full screen" aria-pressed="false" title="Full screen (F)"><svg class="icon fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg><svg class="icon fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4"/></svg></button>
-    </div>
-    <div class="actions">
       <div class="split">
         <button id="open-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="btn-text">Open PDF</span></button>
         <button id="recent-btn" class="split-more" aria-label="Recent books" aria-expanded="false" aria-controls="recent" popovertarget="recent" title="Recent books" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
       </div>
+    </div>
+    <div class="nav">
+      <button id="toc-btn" class="icon-btn" aria-label="Contents" aria-expanded="false" aria-controls="toc" popovertarget="toc" title="Contents and go to page (C)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1"/></svg></button>
+      <button id="prev-btn" class="icon-btn" aria-label="Previous page" title="Previous page (←)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button id="page-btn" class="page-btn" popovertarget="toc" title="Go to a page"><span id="page-label" class="page-label" aria-live="polite"></span></button>
+      <button id="next-btn" class="icon-btn" aria-label="Next page" title="Next page (→)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <div class="actions">
       <button id="gesture-btn" class="primary gesture-btn" title="Start or stop gestures (G)">Start gestures</button>
       <button id="settings-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings" popovertarget="settings" title="Settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       <button id="help-btn" class="icon-btn" aria-label="How it works" title="How it works"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/></svg></button>
@@ -158,8 +152,18 @@
   </main>
 
   <footer class="statusbar">
-    <span id="status" aria-live="polite"></span>
-    <span class="privacy"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Your camera and books never leave this device.</span>
+    <div class="status-text">
+      <span id="status" aria-live="polite"></span>
+      <span class="privacy"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Your camera and books never leave this device.</span>
+    </div>
+    <div class="view" role="group" aria-label="View">
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" class="icon-btn" aria-label="Zoom out" title="Zoom out (−)" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5"/></svg></button>
+        <button id="zoom-label" class="zoom-label" title="Fit the whole page in the window (0)">Fit</button>
+        <button id="zoom-in" class="icon-btn" aria-label="Zoom in" title="Zoom in (+)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5M11 8.5v5"/></svg></button>
+      </div>
+      <button id="fullscreen-btn" class="icon-btn" aria-label="Full screen" aria-pressed="false" title="Full screen (F)"><svg class="icon fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg><svg class="icon fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4"/></svg></button>
+    </div>
   </footer>
 
   <aside id="preview" class="preview" hidden aria-label="Camera">
